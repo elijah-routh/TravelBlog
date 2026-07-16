@@ -1,22 +1,271 @@
 html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
     font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    scroll-behavior: smooth;
 }
 
 body {
-  margin-bottom: 60px;
+    margin: 0;
+    background-color: #f7f3eb;
+    color: #252525;
+    font-family:
+        "Lucida Grande",
+        "Lucida Sans Unicode",
+        "Lucida Sans",
+        "DejaVu Sans",
+        Verdana,
+        sans-serif;
+}
+
+/* Navigation */
+
+.navbar-brand {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.05rem;
+}
+
+.nav-link {
+    font-weight: 600;
+}
+
+/* Hero section */
+
+.hero {
+    position: relative;
+    min-height: 520px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    background-image:
+        linear-gradient(
+            rgba(0, 0, 0, 0.45),
+            rgba(0, 0, 0, 0.55)
+        ),
+        url("/images/CountryPictures/colca_canyon_wide.jpg");
+
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+
+    text-align: center;
+    color: white;
+}
+
+.hero-content {
+    width: 100%;
+    max-width: 800px;
+    padding: 40px 20px;
+}
+
+.hero h1 {
+    margin-bottom: 20px;
+    font-size: 4rem;
+    font-weight: 700;
+}
+
+.hero p {
+    margin-bottom: 30px;
+    font-size: 1.25rem;
+}
+
+/* General sections */
+
+.content-section {
+    padding-top: 70px;
+    padding-bottom: 70px;
+}
+
+.section-title {
+    margin-bottom: 30px;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.section-subtitle {
+    max-width: 700px;
+    margin: 0 auto 40px;
+    color: #646464;
+    text-align: center;
+}
+
+/* Destination cards */
+
+.travel-card {
+    height: 100%;
+    overflow: hidden;
+
+    border: none;
+    border-radius: 12px;
+
+    background-color: white;
+
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.10);
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.travel-card:hover {
+    transform: translateY(-6px);
+
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.16);
+}
+
+.travel-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+}
+
+.travel-card .card-body {
+    padding: 24px;
+}
+
+.travel-card .card-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.travel-card .card-text {
+    color: #5a5a5a;
+    font-weight: 400;
+}
+
+/* Featured article */
+
+.featured-image {
+    width: 100%;
+    height: 420px;
+
+    object-fit: cover;
+
+    border-radius: 12px;
+}
+
+.featured-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+}
+
+.featured-copy h2 {
+    margin-bottom: 20px;
+    font-size: 2.3rem;
+    font-weight: 700;
+}
+
+.featured-copy p {
+    color: #555;
+    font-weight: 400;
+    line-height: 1.8;
+}
+
+/* About */
+
+.about-section {
+    background-color: #e7dfd0;
+}
+
+.author-photo {
+    width: 150px;
+    height: 150px;
+
+    object-fit: cover;
+
+    border: 5px solid white;
+    border-radius: 50%;
+
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+/* Newsletter */
+
+.newsletter {
+    padding: 55px 25px;
+
+    border-radius: 14px;
+
+    background-color: #252525;
+    color: white;
+}
+
+.newsletter p {
+    color: #ddd;
+    font-weight: 400;
+}
+
+/* Footer */
+
+.site-footer {
+    padding: 30px 15px;
+
+    background-color: #171717;
+    color: white;
+
+    text-align: center;
+}
+
+.site-footer p {
+    margin: 0;
+    font-weight: 400;
+}
+
+/* Medium screens */
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .hero {
+        min-height: 450px;
+    }
+
+    .hero h1 {
+        font-size: 3rem;
+    }
+
+    .featured-image {
+        height: 350px;
+    }
+}
+
+/* Small screens */
+
+@media (max-width: 767px) {
+    .hero {
+        min-height: 400px;
+    }
+
+    .hero h1 {
+        font-size: 2.4rem;
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+
+    .content-section {
+        padding-top: 50px;
+        padding-bottom: 50px;
+    }
+
+    .featured-image {
+        height: 280px;
+        margin-bottom: 30px;
+    }
+
+    .featured-copy h2 {
+        font-size: 1.8rem;
+    }
+
+    .travel-card img {
+        height: 190px;
+    }
 }

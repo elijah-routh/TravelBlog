@@ -1,8 +1,272 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- Hero -->
+<header class="hero">
+    <div class="hero-content">
+        <p class="text-uppercase mb-2">
+            Stories from around the world
+        </p>
+
+        <h1>Explore Beyond the Map</h1>
+
+        <p>
+            Discover remarkable landscapes, historic destinations,
+            and practical travel ideas for your next adventure.
+        </p>
+
+        <a
+            href="#featured-posts"
+            class="btn btn-primary btn-lg">
+            Explore the Blog
+        </a>
+    </div>
+</header>
+
+<!-- Featured destinations -->
+<section
+    id="featured-posts"
+    class="content-section">
+
+    <div class="container">
+        <h2 class="section-title">
+            Featured Destinations
+        </h2>
+
+        <p class="section-subtitle">
+            A few memorable places worth adding to your travel list.
+        </p>
+
+        <div class="row g-4">
+
+            <!-- Colca Canyon -->
+            <div class="col-sm-12 col-md-6 col-lg-4">
+                <article class="card travel-card">
+                    <img
+                        src="~/images/CountryPictures/ColcaCanyonIcon.jpg"
+                        class="card-img-top"
+                        alt="View of Colca Canyon in Peru" />
+
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title">
+                            Colca Canyon
+                        </h3>
+
+                        <p class="card-text">
+                            Explore one of the world's deepest canyons,
+                            famous for mountain villages, hiking trails,
+                            and soaring Andean condors.
+                        </p>
+
+                        <a
+                            href="#latest-story"
+                            class="btn btn-outline-primary mt-auto">
+                            Read Post
+                        </a>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Grand Canyon -->
+            <div class="col-sm-12 col-md-6 col-lg-4">
+                <article class="card travel-card">
+                    <img
+                        src="~/images/CountryPictures/GrandCanyonIcon.jpg"
+                        class="card-img-top"
+                        alt="View of the Grand Canyon" />
+
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title">
+                            Grand Canyon
+                        </h3>
+
+                        <p class="card-text">
+                            Plan a visit to dramatic overlooks,
+                            desert trails, and some of the most
+                            recognizable scenery in North America.
+                        </p>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary mt-auto"
+                            disabled>
+                            Coming Soon
+                        </button>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Copper Canyon -->
+            <div class="col-sm-12 col-md-6 col-lg-4">
+                <article class="card travel-card">
+                    <img
+                        src="~/images/CountryPictures/CopperCanyonIcon.jpg"
+                        class="card-img-top"
+                        alt="View of Copper Canyon in Mexico" />
+
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title">
+                            Copper Canyon
+                        </h3>
+
+                        <p class="card-text">
+                            Ride through northern Mexico's enormous
+                            canyon system and discover scenic railways,
+                            remote communities, and rugged terrain.
+                        </p>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary mt-auto"
+                            disabled>
+                            Coming Soon
+                        </button>
+                    </div>
+                </article>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Latest article -->
+<section
+    id="latest-story"
+    class="content-section bg-white">
+
+    <div class="container">
+        <div class="row g-5 align-items-center">
+
+            <div class="col-sm-12 col-lg-7">
+                <img
+                    src="~/images/CountryPictures/colca_canyon_wide.jpg"
+                    class="featured-image"
+                    alt="Wide view of Colca Canyon" />
+            </div>
+
+            <div class="col-sm-12 col-lg-5">
+                <div class="featured-copy">
+                    <p class="text-primary text-uppercase mb-2">
+                        Latest story
+                    </p>
+
+                    <h2>
+                        A Journey Through Colca Canyon
+                    </h2>
+
+                    <p>
+                        Colca Canyon combines dramatic mountain scenery,
+                        ancient agricultural terraces, traditional Andean
+                        communities, and some of the best condor viewing
+                        opportunities in Peru.
+                    </p>
+
+                    <p>
+                        This guide covers what to see, how to prepare,
+                        and what travelers should know before visiting.
+                    </p>
+
+                    <div>
+                        <a
+                            href="#"
+                            class="btn btn-primary">
+                            Read the Full Story
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- About -->
+<section
+    id="about"
+    class="content-section about-section">
+
+    <div class="container">
+        <div class="row align-items-center justify-content-center g-4">
+
+            <div class="col-sm-12 col-md-4 text-center">
+                <img
+                    src="~/images/CountryPictures/ColcaCanyonIcon.jpg"
+                    class="author-photo"
+                    alt="Travel blog author placeholder" />
+            </div>
+
+            <div class="col-sm-12 col-md-7">
+                <h2>About This Blog</h2>
+
+                <p>
+                    I spend too much time exploring Google Maps,
+                    researching unusual destinations, and planning
+                    trips to places with memorable landscapes.
+                </p>
+
+                <p>
+                    This blog collects destination guides, photographs,
+                    and travel notes from canyons, cities, trails, and
+                    other places worth exploring.
+                </p>
+
+                <a
+                    href="#featured-posts"
+                    class="btn btn-dark">
+                    View All Posts
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Newsletter -->
+<section class="content-section">
+    <div class="container">
+        <div class="newsletter text-center">
+            <div class="row justify-content-center">
+                <div class="col-sm-12 col-lg-8">
+                    <h2>Follow the Journey</h2>
+
+                    <p>
+                        Receive new destination guides and travel posts
+                        when they are published.
+                    </p>
+
+                    <form
+                        class="row g-2 justify-content-center"
+                        onsubmit="return false;">
+
+                        <div class="col-sm-12 col-md-7">
+                            <label
+                                for="emailAddress"
+                                class="visually-hidden">
+                                Email address
+                            </label>
+
+                            <input
+                                type="email"
+                                class="form-control form-control-lg"
+                                id="emailAddress"
+                                placeholder="Enter your email" />
+                        </div>
+
+                        <div class="col-sm-12 col-md-auto">
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-lg w-100">
+                                Subscribe
+                            </button>
+                        </div>
+                    </form>
+
+                    <p class="small mt-3 mb-0">
+                        Newsletter signup will be connected later.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
