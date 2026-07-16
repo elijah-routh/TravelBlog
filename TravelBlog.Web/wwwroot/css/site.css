@@ -269,3 +269,15 @@ body {
         height: 190px;
     }
 }
+
+.post-detail-image {
+    max-height: 520px;
+    object-fit: cover;
+}
+
+.post-content {
+    white-space: pre-line;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.1rem;
+    line-height: 1.85;
+}

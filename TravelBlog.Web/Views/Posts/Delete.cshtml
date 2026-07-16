@@ -1,0 +1,56 @@
+@model TravelBlog.Web.Models.Post
+
+@{
+    ViewData["Title"] = "Delete Post";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12 col-lg-7">
+                <div class="card border-danger">
+                    <div class="card-body">
+                        <h1 class="card-title h2 text-danger">
+                            Delete Post
+                        </h1>
+
+                        <p>
+                            Are you sure you want to permanently delete
+                            this post?
+                        </p>
+
+                        <h2 class="h4">
+                            @Model.Title
+                        </h2>
+
+                        <p class="text-muted">
+                            @Model.Summary
+                        </p>
+
+                        <form
+                            asp-controller="Posts"
+                            asp-action="Delete"
+                            asp-route-id="@Model.Id"
+                            method="post">
+
+                            <input asp-for="Id" type="hidden" />
+
+                            <button
+                                type="submit"
+                                class="btn btn-danger">
+                                Delete Permanently
+                            </button>
+
+                            <a
+                                asp-controller="Posts"
+                                asp-action="Index"
+                                class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

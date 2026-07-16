@@ -1,0 +1,143 @@
+@model TravelBlog.Web.Models.Post
+
+@{
+    ViewData["Title"] = "Edit Post";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12 col-lg-8">
+                <h1 class="mb-4">Edit Post</h1>
+
+                <form
+                    asp-controller="Posts"
+                    asp-action="Edit"
+                    asp-route-id="@Model.Id"
+                    method="post">
+
+                    <input asp-for="Id" type="hidden" />
+
+                    <div
+                        asp-validation-summary="ModelOnly"
+                        class="alert alert-danger">
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="Title"
+                            class="form-label">
+                        </label>
+
+                        <input
+                            asp-for="Title"
+                            class="form-control" />
+
+                        <span
+                            asp-validation-for="Title"
+                            class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="Slug"
+                            class="form-label">
+                            URL Slug
+                        </label>
+
+                        <input
+                            asp-for="Slug"
+                            class="form-control" />
+
+                        <span
+                            asp-validation-for="Slug"
+                            class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="Summary"
+                            class="form-label">
+                        </label>
+
+                        <textarea
+                            asp-for="Summary"
+                            class="form-control"
+                            rows="3">
+                        </textarea>
+
+                        <span
+                            asp-validation-for="Summary"
+                            class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="Content"
+                            class="form-label">
+                        </label>
+
+                        <textarea
+                            asp-for="Content"
+                            class="form-control"
+                            rows="14">
+                        </textarea>
+
+                        <span
+                            asp-validation-for="Content"
+                            class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="ImagePath"
+                            class="form-label">
+                        </label>
+
+                        <input
+                            asp-for="ImagePath"
+                            class="form-control" />
+
+                        <span
+                            asp-validation-for="ImagePath"
+                            class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input
+                            asp-for="IsPublished"
+                            class="form-check-input" />
+
+                        <label
+                            asp-for="IsPublished"
+                            class="form-check-label">
+                            Publish this post
+                        </label>
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary">
+                        Save Changes
+                    </button>
+
+                    <a
+                        asp-controller="Posts"
+                        asp-action="Index"
+                        class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

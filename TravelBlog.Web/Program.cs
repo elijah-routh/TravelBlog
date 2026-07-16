@@ -1,11 +1,20 @@
+using Microsoft.EntityFrameworkCore;
+using TravelBlog.Web.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add MVC controllers and Razor views.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddDbContext<BlogDbContext>(options =>
+{
+    var connectionString =
+        builder.Configuration.GetConnectionString("BlogDatabase");
+
+    options.UseSqlite(connectionString);
+});
 
 var app = builder.Build();
 
-// Configure production error handling.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -14,17 +23,15 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Allows ASP.NET Core to serve files from wwwroot.
 app.UseStaticFiles();
 
 app.UseRouting();
 
 app.UseAuthorization();
 
-// Default route:
-// / goes to HomeController.Index
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}"
+);
 
 app.Run();
