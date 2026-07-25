@@ -1,0 +1,10 @@
+**/bin
+**/obj
+**/.vs
+**/.vscode
+.git
+.github
+*.user
+*.db
+publish-test
+README.md
