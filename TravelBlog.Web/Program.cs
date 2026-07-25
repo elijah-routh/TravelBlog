@@ -5,12 +5,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
+var connectionString =
+    builder.Configuration.GetConnectionString("BlogDatabase");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "The BlogDatabase connection string is missing."
+    );
+}
+
 builder.Services.AddDbContext<BlogDbContext>(options =>
 {
-    var connectionString =
-        builder.Configuration.GetConnectionString("BlogDatabase");
-
-    options.UseSqlite(connectionString);
+    options.UseNpgsql(connectionString);
 });
 
 var app = builder.Build();
@@ -22,7 +29,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 
 app.UseRouting();

@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("8bd2df30-d0c4-4ac6-ab91-3db7fe713aed")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("TravelBlog.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b49d4714cf3ea634b39531125af27228c013f87")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7bee5e05bfba015b7417758e433cd27080d112ed")]
 [assembly: System.Reflection.AssemblyProductAttribute("TravelBlog.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TravelBlog.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
