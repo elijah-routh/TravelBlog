@@ -7,7 +7,11 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0" />
 
-    <title>@ViewData["Title"] - Travel Blog</title>
+    <meta
+        name="description"
+        content="Giant Lampoon — parody editorials, short stories, and real news." />
+
+    <title>@ViewData["Title"] - Giant Lampoon</title>
 
     <!-- Bootstrap CSS stored in wwwroot/lib -->
     <link
@@ -29,7 +33,7 @@
                     class="navbar-brand"
                     asp-controller="Home"
                     asp-action="Index">
-                    TRAVEL BLOG
+                    GIANT LAMPOON
                 </a>
 
                 <button
@@ -63,7 +67,7 @@
                                 class="nav-link"
                                 asp-controller="Posts"
                                 asp-action="Index">
-                                Blog
+                                Posts
                             </a>
                         </li>
 
@@ -73,14 +77,6 @@
                                 asp-controller="Posts"
                                 asp-action="Create">
                                 Create Post
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a
-                                class="nav-link"
-                                href="#">
-                                Map
                             </a>
                         </li>
 
@@ -106,7 +102,7 @@
     <footer class="site-footer">
         <div class="container">
             <p>
-                &copy; @DateTime.Now.Year Travel Blog.
+                &copy; @DateTime.Now.Year Giant Lampoon.
                 All rights reserved.
             </p>
         </div>

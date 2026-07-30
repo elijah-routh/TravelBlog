@@ -5,19 +5,13 @@ html {
 
 body {
     margin: 0;
-    background-color: #f7f3eb;
+    background: #f7f3eb;
     color: #252525;
-    font-family:
-        "Lucida Grande",
-        "Lucida Sans Unicode",
-        "Lucida Sans",
-        "DejaVu Sans",
-        Verdana,
-        sans-serif;
+    font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
+        "DejaVu Sans", Verdana, sans-serif;
 }
 
 /* Navigation */
-
 .navbar-brand {
     font-size: 1.4rem;
     font-weight: 700;
@@ -28,31 +22,19 @@ body {
     font-weight: 600;
 }
 
-/* Hero section */
-
+/* Hero */
 .hero {
     position: relative;
-    min-height: 520px;
-
     display: flex;
+    min-height: 520px;
     align-items: center;
     justify-content: center;
-
     overflow: hidden;
-
-    background-image:
-        linear-gradient(
-            rgba(0, 0, 0, 0.45),
-            rgba(0, 0, 0, 0.55)
-        ),
-        url("/images/CountryPictures/colca_canyon_wide.jpg");
-
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-
+    color: #fff;
     text-align: center;
-    color: white;
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
+        url("/images/CountryPictures/colca_canyon_wide.jpg") center / cover no-repeat;
 }
 
 .hero-content {
@@ -72,11 +54,9 @@ body {
     font-size: 1.25rem;
 }
 
-/* General sections */
-
+/* Shared sections */
 .content-section {
-    padding-top: 70px;
-    padding-bottom: 70px;
+    padding: 70px 0;
 }
 
 .section-title {
@@ -93,30 +73,20 @@ body {
     text-align: center;
 }
 
-/* Destination cards */
-
+/* Cards */
 .travel-card {
     height: 100%;
     overflow: hidden;
-
-    border: none;
+    border: 0;
     border-radius: 12px;
-
-    background-color: white;
-
-    box-shadow:
-        0 6px 18px rgba(0, 0, 0, 0.10);
-
-    transition:
-        transform 0.25s ease,
-        box-shadow 0.25s ease;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .travel-card:hover {
-    transform: translateY(-6px);
-
-    box-shadow:
-        0 12px 24px rgba(0, 0, 0, 0.16);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
 }
 
 .travel-card img {
@@ -136,92 +106,158 @@ body {
 
 .travel-card .card-text {
     color: #5a5a5a;
-    font-weight: 400;
 }
 
-/* Featured article */
-
-.featured-image {
-    width: 100%;
-    height: 420px;
-
-    object-fit: cover;
-
-    border-radius: 12px;
+/* Compact editorial rows */
+.editorial-row-section {
+    padding: 40px 0;
 }
 
-.featured-copy {
+.editorial-row-section:nth-of-type(even) {
+    background: #fff;
+}
+
+.editorial-row-heading {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.editorial-row-heading .section-title {
+    margin: 0;
+    text-align: left;
+}
+
+.editorial-row-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.editorial-row-controls .btn {
+    width: 40px;
+    height: 36px;
+    padding: 0;
+}
+
+.editorial-card-row {
+    display: flex;
+    align-items: stretch;
+    gap: 1rem;
+    overflow-x: auto;
+
+    /* Space inside the scroll area prevents hover clipping. */
+    padding: 8px 4px 20px;
+
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+}
+
+.editorial-row-card {
+    display: flex;
+    flex: 0 0 280px;
     flex-direction: column;
-    justify-content: center;
-    height: 100%;
+    width: 280px;
+    height: 390px;
+    min-width: 280px;
+    scroll-snap-align: start;
 }
 
-.featured-copy h2 {
-    margin-bottom: 20px;
-    font-size: 2.3rem;
-    font-weight: 700;
+.editorial-row-card .card-img-top {
+    flex-shrink: 0;
+    height: 155px;
+    object-fit: cover;
 }
 
-.featured-copy p {
-    color: #555;
-    font-weight: 400;
-    line-height: 1.8;
+.editorial-row-card .card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    padding: 1rem;
+}
+
+.editorial-row-card .card-title {
+    margin-bottom: 0.65rem;
+    font-size: 1.2rem;
+
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.editorial-row-card .card-text {
+    margin-bottom: 1rem;
+    overflow: hidden;
+    color: #5a5a5a;
+    font-size: 0.9rem;
+    line-height: 1.5;
+
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.editorial-row-card .btn {
+    align-self: flex-start;
+    margin-top: auto;
 }
 
 /* About */
-
 .about-section {
-    background-color: #e7dfd0;
+    background: #e7dfd0;
 }
 
 .author-photo {
     width: 150px;
     height: 150px;
-
     object-fit: cover;
-
-    border: 5px solid white;
+    border: 5px solid #fff;
     border-radius: 50%;
-
-    box-shadow:
-        0 4px 14px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
 /* Newsletter */
-
 .newsletter {
     padding: 55px 25px;
-
     border-radius: 14px;
-
-    background-color: #252525;
-    color: white;
+    background: #252525;
+    color: #fff;
 }
 
 .newsletter p {
     color: #ddd;
-    font-weight: 400;
+}
+
+/* Posts */
+.post-detail-image {
+    max-height: 520px;
+    object-fit: cover;
+}
+
+.post-content {
+    white-space: pre-line;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.1rem;
+    line-height: 1.85;
 }
 
 /* Footer */
-
 .site-footer {
     padding: 30px 15px;
-
-    background-color: #171717;
-    color: white;
-
+    background: #171717;
+    color: #fff;
     text-align: center;
 }
 
 .site-footer p {
     margin: 0;
-    font-weight: 400;
 }
 
-/* Medium screens */
-
+/* Responsive */
 @media (min-width: 768px) and (max-width: 991px) {
     .hero {
         min-height: 450px;
@@ -230,13 +266,7 @@ body {
     .hero h1 {
         font-size: 3rem;
     }
-
-    .featured-image {
-        height: 350px;
-    }
 }
-
-/* Small screens */
 
 @media (max-width: 767px) {
     .hero {
@@ -252,17 +282,24 @@ body {
     }
 
     .content-section {
-        padding-top: 50px;
-        padding-bottom: 50px;
+        padding: 50px 0;
     }
 
-    .featured-image {
-        height: 280px;
-        margin-bottom: 30px;
+    .editorial-row-section {
+        padding: 32px 0;
     }
 
-    .featured-copy h2 {
-        font-size: 1.8rem;
+    .editorial-row-controls {
+        display: none;
+    }
+
+    .editorial-row-card {
+        flex-basis: 245px;
+        min-width: 245px;
+    }
+
+    .editorial-row-card .card-img-top {
+        height: 135px;
     }
 
     .travel-card img {
@@ -270,14 +307,13 @@ body {
     }
 }
 
-.post-detail-image {
-    max-height: 520px;
-    object-fit: cover;
-}
+@media (prefers-reduced-motion: reduce) {
+    html,
+    .editorial-card-row {
+        scroll-behavior: auto;
+    }
 
-.post-content {
-    white-space: pre-line;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.1rem;
-    line-height: 1.85;
+    .travel-card {
+        transition: none;
+    }
 }

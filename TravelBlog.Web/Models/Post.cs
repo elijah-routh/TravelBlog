@@ -37,6 +37,11 @@ public class Post
     [Display(Name = "Image path")]
     public string? ImagePath { get; set; }
 
+    [Required(ErrorMessage = "A category is required.")]
+    [EnumDataType(typeof(PostCategory), ErrorMessage = "Select a valid category.")]
+    [Display(Name = "Category")]
+    public PostCategory Category { get; set; } = PostCategory.ParodyEditorial;
+
     [Display(Name = "Published")]
     public bool IsPublished { get; set; }
 

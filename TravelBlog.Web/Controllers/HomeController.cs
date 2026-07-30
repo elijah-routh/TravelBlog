@@ -1,32 +1,98 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TravelBlog.Web.Data;
 using TravelBlog.Web.Models;
 
-namespace TravelBlog.Web.Controllers
+namespace TravelBlog.Web.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly ILogger<HomeController> _logger;
+    private readonly BlogDbContext _context;
+
+    public HomeController(
+        ILogger<HomeController> logger,
+        BlogDbContext context)
     {
-        private readonly ILogger<HomeController> _logger;
+        _logger = logger;
+        _context = context;
+    }
 
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
+    public async Task<IActionResult> Index()
+    {
+        const int postsPerCategory = 8;
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+        var parodyEditorials = await _context.Posts
+            .AsNoTracking()
+            .Where(post =>
+                post.IsPublished &&
+                post.Category == PostCategory.ParodyEditorial)
+            .OrderByDescending(post => post.CreatedAt)
+            .Take(postsPerCategory)
+            .ToListAsync();
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+        var shortStories = await _context.Posts
+            .AsNoTracking()
+            .Where(post =>
+                post.IsPublished &&
+                post.Category == PostCategory.ShortStory)
+            .OrderByDescending(post => post.CreatedAt)
+            .Take(postsPerCategory)
+            .ToListAsync();
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        var realNews = await _context.Posts
+            .AsNoTracking()
+            .Where(post =>
+                post.IsPublished &&
+                post.Category == PostCategory.RealNews)
+            .OrderByDescending(post => post.CreatedAt)
+            .Take(postsPerCategory)
+            .ToListAsync();
+
+        var viewModel = new HomeIndexViewModel
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+            Categories =
+            [
+                new EditorialCategoryViewModel
+                {
+                    Name = "Parody Editorial",
+                    Slug = "parody-editorial",
+                    Posts = parodyEditorials
+                },
+                new EditorialCategoryViewModel
+                {
+                    Name = "Short Stories",
+                    Slug = "short-stories",
+                    Posts = shortStories
+                },
+                new EditorialCategoryViewModel
+                {
+                    Name = "Real News",
+                    Slug = "real-news",
+                    Posts = realNews
+                }
+            ]
+        };
+
+        return View(viewModel);
+    }
+
+    public IActionResult Privacy()
+    {
+        return View();
+    }
+
+    [ResponseCache(
+        Duration = 0,
+        Location = ResponseCacheLocation.None,
+        NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel
+        {
+            RequestId = Activity.Current?.Id
+                ?? HttpContext.TraceIdentifier
+        });
     }
 }

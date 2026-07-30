@@ -1,4 +1,6 @@
-﻿@{
+﻿@model TravelBlog.Web.Models.HomeIndexViewModel
+
+@{
     ViewData["Title"] = "Home";
 }
 
@@ -6,180 +8,114 @@
 <header class="hero">
     <div class="hero-content">
         <p class="text-uppercase mb-2">
-            Stories from around the world
+            Satire, fiction, and reporting
         </p>
 
-        <h1>Explore Beyond the Map</h1>
+        <h1>Giant Lampoon</h1>
 
         <p>
-            Discover remarkable landscapes, historic destinations,
-            and practical travel ideas for your next adventure.
+            An independent publication for parody editorials,
+            original short stories, and real news.
         </p>
 
         <a
-            href="#featured-posts"
+            href="#parody-editorial"
             class="btn btn-primary btn-lg">
-            Explore the Blog
+            Read the Latest
         </a>
     </div>
 </header>
 
-<!-- Featured destinations -->
-<section
-    id="featured-posts"
-    class="content-section">
+<!-- Category rows -->
+@foreach (var category in Model.Categories)
+{
+    <section
+        id="@category.Slug"
+        class="content-section editorial-row-section">
 
-    <div class="container">
-        <h2 class="section-title">
-            Featured Destinations
-        </h2>
+        <div class="container">
+            <div class="editorial-row-heading">
+                <h2 class="section-title mb-0">
+                    @category.Name
+                </h2>
 
-        <p class="section-subtitle">
-            A few memorable places worth adding to your travel list.
-        </p>
-
-        <div class="row g-4">
-
-            <!-- Colca Canyon -->
-            <div class="col-sm-12 col-md-6 col-lg-4">
-                <article class="card travel-card">
-                    <img
-                        src="~/images/CountryPictures/ColcaCanyonIcon.jpg"
-                        class="card-img-top"
-                        alt="View of Colca Canyon in Peru" />
-
-                    <div class="card-body d-flex flex-column">
-                        <h3 class="card-title">
-                            Colca Canyon
-                        </h3>
-
-                        <p class="card-text">
-                            Explore one of the world's deepest canyons,
-                            famous for mountain villages, hiking trails,
-                            and soaring Andean condors.
-                        </p>
-
-                        <a
-                            href="#latest-story"
-                            class="btn btn-outline-primary mt-auto">
-                            Read Post
-                        </a>
-                    </div>
-                </article>
-            </div>
-
-            <!-- Grand Canyon -->
-            <div class="col-sm-12 col-md-6 col-lg-4">
-                <article class="card travel-card">
-                    <img
-                        src="~/images/CountryPictures/GrandCanyonIcon.jpg"
-                        class="card-img-top"
-                        alt="View of the Grand Canyon" />
-
-                    <div class="card-body d-flex flex-column">
-                        <h3 class="card-title">
-                            Grand Canyon
-                        </h3>
-
-                        <p class="card-text">
-                            Plan a visit to dramatic overlooks,
-                            desert trails, and some of the most
-                            recognizable scenery in North America.
-                        </p>
+                @if (category.Posts.Count > 0)
+                {
+                    <div class="editorial-row-controls">
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            data-scroll-left="@category.Slug-row"
+                            aria-label="Scroll @category.Name left">
+                            ←
+                        </button>
 
                         <button
                             type="button"
-                            class="btn btn-outline-primary mt-auto"
-                            disabled>
-                            Coming Soon
+                            class="btn btn-outline-primary btn-sm"
+                            data-scroll-right="@category.Slug-row"
+                            aria-label="Scroll @category.Name right">
+                            →
                         </button>
                     </div>
-                </article>
+                }
             </div>
 
-            <!-- Copper Canyon -->
-            <div class="col-sm-12 col-md-6 col-lg-4">
-                <article class="card travel-card">
-                    <img
-                        src="~/images/CountryPictures/CopperCanyonIcon.jpg"
-                        class="card-img-top"
-                        alt="View of Copper Canyon in Mexico" />
+            @if (category.Posts.Count > 0)
+            {
+                <div
+                    id="@category.Slug-row"
+                    class="editorial-card-row">
 
-                    <div class="card-body d-flex flex-column">
-                        <h3 class="card-title">
-                            Copper Canyon
-                        </h3>
+                    @foreach (var post in category.Posts)
+                    {
+                        var imagePath =
+                            string.IsNullOrWhiteSpace(post.ImagePath)
+                                ? Url.Content(
+                                    "~/images/CountryPictures/ColcaCanyonIcon.jpg"
+                                )
+                                : Url.Content(post.ImagePath);
 
-                        <p class="card-text">
-                            Ride through northern Mexico's enormous
-                            canyon system and discover scenic railways,
-                            remote communities, and rugged terrain.
-                        </p>
+                        <article class="card travel-card editorial-row-card">
+                            <img
+                                src="@imagePath"
+                                class="card-img-top"
+                                alt="@post.Title" />
 
-                        <button
-                            type="button"
-                            class="btn btn-outline-primary mt-auto"
-                            disabled>
-                            Coming Soon
-                        </button>
-                    </div>
-                </article>
-            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h3 class="card-title">
+                                    @post.Title
+                                </h3>
 
-        </div>
-    </div>
-</section>
+                                <p class="card-text">
+                                    @(
+                                        string.IsNullOrWhiteSpace(post.Summary)
+                                            ? "Read the full post to learn more."
+                                            : post.Summary
+                                    )
+                                </p>
 
-<!-- Latest article -->
-<section
-    id="latest-story"
-    class="content-section bg-white">
-
-    <div class="container">
-        <div class="row g-5 align-items-center">
-
-            <div class="col-sm-12 col-lg-7">
-                <img
-                    src="~/images/CountryPictures/colca_canyon_wide.jpg"
-                    class="featured-image"
-                    alt="Wide view of Colca Canyon" />
-            </div>
-
-            <div class="col-sm-12 col-lg-5">
-                <div class="featured-copy">
-                    <p class="text-primary text-uppercase mb-2">
-                        Latest story
-                    </p>
-
-                    <h2>
-                        A Journey Through Colca Canyon
-                    </h2>
-
-                    <p>
-                        Colca Canyon combines dramatic mountain scenery,
-                        ancient agricultural terraces, traditional Andean
-                        communities, and some of the best condor viewing
-                        opportunities in Peru.
-                    </p>
-
-                    <p>
-                        This guide covers what to see, how to prepare,
-                        and what travelers should know before visiting.
-                    </p>
-
-                    <div>
-                        <a
-                            href="#"
-                            class="btn btn-primary">
-                            Read the Full Story
-                        </a>
-                    </div>
+                                <a
+                                    asp-controller="Posts"
+                                    asp-action="Details"
+                                    asp-route-slug="@post.Slug"
+                                    class="btn btn-outline-primary mt-auto">
+                                    Read Post
+                                </a>
+                            </div>
+                        </article>
+                    }
                 </div>
-            </div>
-
+            }
+            else
+            {
+                <p class="text-muted mb-0">
+                    No published posts are available in this category yet.
+                </p>
+            }
         </div>
-    </div>
-</section>
+    </section>
+}
 
 <!-- About -->
 <section
@@ -193,28 +129,26 @@
                 <img
                     src="~/images/CountryPictures/ColcaCanyonIcon.jpg"
                     class="author-photo"
-                    alt="Travel blog author placeholder" />
+                    alt="Giant Lampoon" />
             </div>
 
             <div class="col-sm-12 col-md-7">
-                <h2>About This Blog</h2>
+                <h2>About Giant Lampoon</h2>
 
                 <p>
-                    I spend too much time exploring Google Maps,
-                    researching unusual destinations, and planning
-                    trips to places with memorable landscapes.
+                    Giant Lampoon collects parody editorials,
+                    original short fiction, and real reporting.
                 </p>
 
                 <p>
-                    This blog collects destination guides, photographs,
-                    and travel notes from canyons, cities, trails, and
-                    other places worth exploring.
+                    Each section offers a different kind of story,
+                    from satire to fiction to current events.
                 </p>
 
                 <a
-                    href="#featured-posts"
+                    href="#parody-editorial"
                     class="btn btn-dark">
-                    View All Posts
+                    Browse the Archive
                 </a>
             </div>
 
@@ -228,11 +162,11 @@
         <div class="newsletter text-center">
             <div class="row justify-content-center">
                 <div class="col-sm-12 col-lg-8">
-                    <h2>Follow the Journey</h2>
+                    <h2>Follow Giant Lampoon</h2>
 
                     <p>
-                        Receive new destination guides and travel posts
-                        when they are published.
+                        Get new editorials, stories, and news posts
+                        from Giant Lampoon as they are published.
                     </p>
 
                     <form
@@ -270,3 +204,39 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document
+                .querySelectorAll("[data-scroll-left]")
+                .forEach(function (button) {
+                    button.addEventListener("click", function () {
+                        const row = document.getElementById(
+                            button.dataset.scrollLeft
+                        );
+
+                        row?.scrollBy({
+                            left: -320,
+                            behavior: "smooth"
+                        });
+                    });
+                });
+
+            document
+                .querySelectorAll("[data-scroll-right]")
+                .forEach(function (button) {
+                    button.addEventListener("click", function () {
+                        const row = document.getElementById(
+                            button.dataset.scrollRight
+                        );
+
+                        row?.scrollBy({
+                            left: 320,
+                            behavior: "smooth"
+                        });
+                    });
+                });
+        });
+    </script>
+}

@@ -139,6 +139,7 @@ public class PostsController : Controller
         existingPost.Summary = formPost.Summary;
         existingPost.Content = formPost.Content;
         existingPost.ImagePath = formPost.ImagePath;
+        existingPost.Category = formPost.Category;
         existingPost.IsPublished = formPost.IsPublished;
         existingPost.UpdatedAt = DateTime.UtcNow;
 

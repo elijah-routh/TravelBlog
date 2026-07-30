@@ -19,13 +19,22 @@
                             this post?
                         </p>
 
+                        <p class="mb-2">
+                            <span class="badge text-bg-primary">
+                                @Html.DisplayFor(model => model.Category)
+                            </span>
+                        </p>
+
                         <h2 class="h4">
                             @Model.Title
                         </h2>
 
-                        <p class="text-muted">
-                            @Model.Summary
-                        </p>
+                        @if (!string.IsNullOrWhiteSpace(Model.Summary))
+                        {
+                            <p class="text-muted">
+                                @Model.Summary
+                            </p>
+                        }
 
                         <form
                             asp-controller="Posts"

@@ -29,7 +29,7 @@
                         <input
                             asp-for="Title"
                             class="form-control"
-                            placeholder="Colca Canyon Travel Guide" />
+                            placeholder="Enter the post title" />
 
                         <span
                             asp-validation-for="Title"
@@ -47,7 +47,7 @@
                         <input
                             asp-for="Slug"
                             class="form-control"
-                            placeholder="colca-canyon-travel-guide" />
+                            placeholder="example-post-title" />
 
                         <div class="form-text">
                             Use lowercase letters, numbers, and hyphens.
@@ -55,6 +55,28 @@
 
                         <span
                             asp-validation-for="Slug"
+                            class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="Category"
+                            class="form-label">
+                        </label>
+
+                        <select
+                            asp-for="Category"
+                            asp-items="Html.GetEnumSelectList<PostCategory>()"
+                            class="form-select">
+
+                            <option value="">
+                                Select a category
+                            </option>
+                        </select>
+
+                        <span
+                            asp-validation-for="Category"
                             class="text-danger">
                         </span>
                     </div>
@@ -69,7 +91,7 @@
                             asp-for="Summary"
                             class="form-control"
                             rows="3"
-                            placeholder="A short introduction shown on the post card.">
+                            placeholder="A short introduction shown on post cards.">
                         </textarea>
 
                         <span
@@ -88,7 +110,7 @@
                             asp-for="Content"
                             class="form-control"
                             rows="14"
-                            placeholder="Write the complete blog post here.">
+                            placeholder="Write the complete post here.">
                         </textarea>
 
                         <span
@@ -109,8 +131,8 @@
                             placeholder="/images/CountryPictures/ColcaCanyonIcon.jpg" />
 
                         <div class="form-text">
-                            For now, enter the path to an image already
-                            stored in wwwroot.
+                            Enter the path to an image stored inside
+                            wwwroot.
                         </div>
 
                         <span

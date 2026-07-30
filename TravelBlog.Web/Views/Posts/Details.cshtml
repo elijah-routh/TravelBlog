@@ -9,7 +9,11 @@
         <div class="row justify-content-center">
             <div class="col-sm-12 col-lg-9">
 
-                <div class="mb-3">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge text-bg-primary">
+                        @Html.DisplayFor(model => model.Category)
+                    </span>
+
                     @if (Model.IsPublished)
                     {
                         <span class="badge text-bg-success">
@@ -29,7 +33,7 @@
                 </h1>
 
                 <p class="text-muted">
-                    Published
+                    Created
                     @Model.CreatedAt
                         .ToLocalTime()
                         .ToString("MMMM d, yyyy")
