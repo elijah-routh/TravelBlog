@@ -1,0 +1,63 @@
+@{
+    var currentPage =
+        ViewContext.RouteData.Values["page"]?.ToString();
+
+    string ActiveClass(string page)
+    {
+        return string.Equals(
+            currentPage,
+            page,
+            StringComparison.OrdinalIgnoreCase)
+                ? "active"
+                : string.Empty;
+    }
+}
+
+<nav
+    class="account-manage-nav nav flex-column gap-2"
+    aria-label="Account settings">
+    <a
+        class="nav-link @ActiveClass("/Account/Manage/Index")"
+        asp-page="./Index">
+        <span class="account-nav-label">Profile</span>
+        <span aria-hidden="true">›</span>
+    </a>
+    <a
+        class="nav-link @ActiveClass("/Account/Manage/Email")"
+        asp-page="./Email">
+        <span class="account-nav-label">Email</span>
+        <span aria-hidden="true">›</span>
+    </a>
+    <a
+        class="nav-link @ActiveClass("/Account/Manage/ChangePassword")"
+        asp-page="./ChangePassword">
+        <span class="account-nav-label">Password</span>
+        <span aria-hidden="true">›</span>
+    </a>
+    <a
+        class="nav-link @ActiveClass("/Account/Manage/TwoFactorAuthentication")"
+        asp-page="./TwoFactorAuthentication">
+        <span class="account-nav-label">Two-factor authentication</span>
+        <span aria-hidden="true">›</span>
+    </a>
+    <a
+        class="nav-link @ActiveClass("/Account/Manage/PersonalData")"
+        asp-page="./PersonalData">
+        <span class="account-nav-label">Personal data</span>
+        <span aria-hidden="true">›</span>
+    </a>
+
+    <form
+        class="account-manage-logout"
+        asp-area="Identity"
+        asp-page="/Account/Logout"
+        asp-route-returnUrl="@Url.Content("~/")"
+        method="post">
+        <button
+            type="submit"
+            class="nav-link account-logout-button w-100">
+            <span class="account-nav-label">Logout</span>
+            <span aria-hidden="true">→</span>
+        </button>
+    </form>
+</nav>

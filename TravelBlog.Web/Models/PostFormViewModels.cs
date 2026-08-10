@@ -2,38 +2,27 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TravelBlog.Web.Models;
 
-public class Post
+public abstract class PostFormViewModel
 {
-    public int Id { get; set; }
-
-    [Required]
-    public string AuthorId { get; set; } = string.Empty;
-
-    public ApplicationUser Author { get; set; } = null!;
-
     [Required(ErrorMessage = "A title is required.")]
     [StringLength(
         150,
-        ErrorMessage = "The title cannot exceed 150 characters."
-    )]
+        ErrorMessage = "The title cannot exceed 150 characters.")]
     public string Title { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "A URL slug is required.")]
     [StringLength(
         160,
-        ErrorMessage = "The slug cannot exceed 160 characters."
-    )]
+        ErrorMessage = "The slug cannot exceed 160 characters.")]
     [RegularExpression(
         @"^[a-z0-9]+(?:-[a-z0-9]+)*$",
         ErrorMessage =
-            "Use lowercase letters, numbers, and hyphens only."
-    )]
+            "Use lowercase letters, numbers, and hyphens only.")]
     public string Slug { get; set; } = string.Empty;
 
     [StringLength(
         350,
-        ErrorMessage = "The summary cannot exceed 350 characters."
-    )]
+        ErrorMessage = "The summary cannot exceed 350 characters.")]
     public string? Summary { get; set; }
 
     [Required(ErrorMessage = "Post content is required.")]
@@ -43,16 +32,20 @@ public class Post
     public string? ImagePath { get; set; }
 
     [Required(ErrorMessage = "A category is required.")]
-    [EnumDataType(typeof(PostCategory), ErrorMessage = "Select a valid category.")]
+    [EnumDataType(
+        typeof(PostCategory),
+        ErrorMessage = "Select a valid category.")]
     [Display(Name = "Category")]
-    public PostCategory Category { get; set; } = PostCategory.ParodyEditorial;
+    public PostCategory Category { get; set; } =
+        PostCategory.ParodyEditorial;
 
     [Display(Name = "Published")]
     public bool IsPublished { get; set; }
+}
 
-    [Display(Name = "Created")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+public sealed class CreatePostViewModel : PostFormViewModel;
 
-    [Display(Name = "Last updated")]
-    public DateTime? UpdatedAt { get; set; }
+public sealed class EditPostViewModel : PostFormViewModel
+{
+    public int Id { get; set; }
 }

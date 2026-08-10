@@ -1,4 +1,7 @@
-﻿@model TravelBlog.Web.Models.HomeIndexViewModel
+﻿@using Microsoft.AspNetCore.Identity
+@using TravelBlog.Web.Authorization
+@model TravelBlog.Web.Models.HomeIndexViewModel
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "Home";
@@ -86,6 +89,9 @@
                                 <h3 class="card-title">
                                     @post.Title
                                 </h3>
+                                <p class="small text-muted">
+                                    By @post.Author.DisplayName
+                                </p>
 
                                 <p class="card-text">
                                     @(
@@ -102,6 +108,12 @@
                                     class="btn btn-outline-primary mt-auto">
                                     Read Post
                                 </a>
+                                @if (User.Identity?.IsAuthenticated == true &&
+                                    (User.IsInRole(RoleNames.Admin) ||
+                                     post.AuthorId == UserManager.GetUserId(User)))
+                                {
+                                    <a asp-controller="Posts" asp-action="Edit" asp-route-id="@post.Id" class="btn btn-sm btn-link mt-2">Edit</a>
+                                }
                             </div>
                         </article>
                     }

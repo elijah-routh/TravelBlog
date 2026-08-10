@@ -25,6 +25,7 @@ public class HomeController : Controller
 
         var parodyEditorials = await _context.Posts
             .AsNoTracking()
+            .Include(post => post.Author)
             .Where(post =>
                 post.IsPublished &&
                 post.Category == PostCategory.ParodyEditorial)
@@ -34,6 +35,7 @@ public class HomeController : Controller
 
         var shortStories = await _context.Posts
             .AsNoTracking()
+            .Include(post => post.Author)
             .Where(post =>
                 post.IsPublished &&
                 post.Category == PostCategory.ShortStory)
@@ -43,6 +45,7 @@ public class HomeController : Controller
 
         var realNews = await _context.Posts
             .AsNoTracking()
+            .Include(post => post.Author)
             .Where(post =>
                 post.IsPublished &&
                 post.Category == PostCategory.RealNews)

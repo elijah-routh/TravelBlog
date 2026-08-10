@@ -1,0 +1,65 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.Manage.IndexModel
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<div class="mb-4">
+    <h2 class="h3 mb-2">Profile</h2>
+    <p class="text-muted mb-0">
+        Manage how your name and email appear across the site.
+    </p>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success">
+        @Model.StatusMessage
+    </div>
+}
+
+<form method="post">
+    <div
+        asp-validation-summary="ModelOnly"
+        class="text-danger mb-3">
+    </div>
+
+    <div class="mb-4">
+        <label
+            asp-for="Input.DisplayName"
+            class="form-label">
+        </label>
+        <input
+            asp-for="Input.DisplayName"
+            class="form-control" />
+        <span
+            asp-validation-for="Input.DisplayName"
+            class="text-danger">
+        </span>
+    </div>
+
+    <div class="mb-4">
+        <label
+            asp-for="Input.Email"
+            class="form-label">
+        </label>
+        <input
+            asp-for="Input.Email"
+            class="form-control"
+            autocomplete="username" />
+        <span
+            asp-validation-for="Input.Email"
+            class="text-danger">
+        </span>
+    </div>
+
+    <button
+        type="submit"
+        class="btn btn-primary">
+        Save profile
+    </button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

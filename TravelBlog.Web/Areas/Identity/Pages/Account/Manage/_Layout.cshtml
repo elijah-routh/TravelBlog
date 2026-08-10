@@ -1,0 +1,38 @@
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+}
+
+<section class="content-section">
+    <div class="container account-settings-container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-11">
+                <div class="card account-settings-card border-0 shadow-sm">
+                    <header class="account-settings-header">
+                        <p class="text-uppercase small fw-bold mb-2">
+                            Account settings
+                        </p>
+                        <h1 class="mb-2">Manage your account</h1>
+                        <p class="mb-0">
+                            Update your profile, security, and privacy settings.
+                        </p>
+                    </header>
+
+                    <div class="card-body p-0">
+                        <div class="row g-0">
+                            <aside class="col-12 col-lg-4 col-xl-3 account-manage-sidebar">
+                                <partial name="_ManageNav" />
+                            </aside>
+                            <div class="col-12 col-lg-8 col-xl-9 account-manage-content">
+                                @RenderBody()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+}

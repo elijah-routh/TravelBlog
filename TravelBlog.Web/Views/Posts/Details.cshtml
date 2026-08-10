@@ -1,4 +1,7 @@
+@using Microsoft.AspNetCore.Identity
+@using TravelBlog.Web.Authorization
 @model TravelBlog.Web.Models.Post
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = Model.Title;
@@ -33,7 +36,7 @@
                 </h1>
 
                 <p class="text-muted">
-                    Created
+                    By @Model.Author.DisplayName ·
                     @Model.CreatedAt
                         .ToLocalTime()
                         .ToString("MMMM d, yyyy")
@@ -68,21 +71,13 @@
                         Back to Posts
                     </a>
 
-                    <a
-                        asp-controller="Posts"
-                        asp-action="Edit"
-                        asp-route-id="@Model.Id"
-                        class="btn btn-outline-primary">
-                        Edit
-                    </a>
-
-                    <a
-                        asp-controller="Posts"
-                        asp-action="Delete"
-                        asp-route-id="@Model.Id"
-                        class="btn btn-outline-danger">
-                        Delete
-                    </a>
+                    @if (User.Identity?.IsAuthenticated == true &&
+                        (User.IsInRole(RoleNames.Admin) ||
+                         Model.AuthorId == UserManager.GetUserId(User)))
+                    {
+                        <a asp-controller="Posts" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">Edit</a>
+                        <a asp-controller="Posts" asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">Delete</a>
+                    }
                 </div>
             </div>
         </div>

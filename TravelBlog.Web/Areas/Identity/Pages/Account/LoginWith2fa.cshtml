@@ -1,0 +1,63 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.LoginWith2faModel
+@{
+    ViewData["Title"] = "Two-factor authentication";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-5">
+                <h1>Two-factor authentication</h1>
+                <p class="text-muted">
+                    Enter the current code from your authenticator app.
+                </p>
+
+                <form
+                    method="post"
+                    asp-route-returnUrl="@Model.ReturnUrl"
+                    asp-route-rememberMe="@Model.RememberMe">
+                    <div
+                        asp-validation-summary="ModelOnly"
+                        class="text-danger mb-3">
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="Input.TwoFactorCode"
+                            class="form-label">
+                        </label>
+                        <input
+                            asp-for="Input.TwoFactorCode"
+                            class="form-control"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            autofocus />
+                        <span
+                            asp-validation-for="Input.TwoFactorCode"
+                            class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input
+                            asp-for="Input.RememberMachine"
+                            class="form-check-input" />
+                        <label
+                            asp-for="Input.RememberMachine"
+                            class="form-check-label">
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Verify
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
