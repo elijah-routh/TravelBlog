@@ -45,7 +45,7 @@
                 @if (!string.IsNullOrWhiteSpace(Model.ImagePath))
                 {
                     <img
-                        src="@Model.ImagePath"
+                        src="@Url.Content(Model.ImagePath)"
                         class="img-fluid rounded w-100 mb-4 post-detail-image"
                         alt="@Model.Title" />
                 }

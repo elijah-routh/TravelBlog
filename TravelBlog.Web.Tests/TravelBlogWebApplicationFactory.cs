@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using TravelBlog.Web.Data;
+using TravelBlog.Web.Services;
 
 namespace TravelBlog.Web.Tests;
 
@@ -13,6 +14,8 @@ public sealed class TravelBlogWebApplicationFactory
 {
     private readonly SqliteConnection _connection =
         new("Data Source=:memory:");
+
+    public FakeImageStorage ImageStorage { get; } = new();
 
     public TravelBlogWebApplicationFactory()
     {
@@ -25,6 +28,7 @@ public sealed class TravelBlogWebApplicationFactory
         builder.ConfigureServices(services =>
         {
             services.AddSingleton(_connection);
+            services.AddSingleton<IImageStorage>(ImageStorage);
             services.AddDbContext<BlogDbContext>(options =>
                 options.UseSqlite(_connection));
         });

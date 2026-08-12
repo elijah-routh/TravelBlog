@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace TravelBlog.Web.Models;
@@ -28,8 +29,8 @@ public abstract class PostFormViewModel
     [Required(ErrorMessage = "Post content is required.")]
     public string Content { get; set; } = string.Empty;
 
-    [Display(Name = "Image path")]
-    public string? ImagePath { get; set; }
+    [Display(Name = "Featured image")]
+    public IFormFile? FeaturedImage { get; set; }
 
     [Required(ErrorMessage = "A category is required.")]
     [EnumDataType(
@@ -48,4 +49,9 @@ public sealed class CreatePostViewModel : PostFormViewModel;
 public sealed class EditPostViewModel : PostFormViewModel
 {
     public int Id { get; set; }
+
+    public string? CurrentImagePath { get; set; }
+
+    [Display(Name = "Remove featured image")]
+    public bool RemoveFeaturedImage { get; set; }
 }

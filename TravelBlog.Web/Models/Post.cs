@@ -42,6 +42,8 @@ public class Post
     [Display(Name = "Image path")]
     public string? ImagePath { get; set; }
 
+    public string? ImageObjectKey { get; set; }
+
     [Required(ErrorMessage = "A category is required.")]
     [EnumDataType(typeof(PostCategory), ErrorMessage = "Select a valid category.")]
     [Display(Name = "Category")]

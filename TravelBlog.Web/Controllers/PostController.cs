@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TravelBlog.Web.Authorization;
 using TravelBlog.Web.Data;
 using TravelBlog.Web.Models;
+using TravelBlog.Web.Services;
 
 namespace TravelBlog.Web.Controllers;
 
@@ -14,15 +15,21 @@ public class PostsController : Controller
     private readonly BlogDbContext _context;
     private readonly IAuthorizationService _authorizationService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IImageStorage _imageStorage;
+    private readonly ILogger<PostsController> _logger;
 
     public PostsController(
         BlogDbContext context,
         IAuthorizationService authorizationService,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IImageStorage imageStorage,
+        ILogger<PostsController> logger)
     {
         _context = context;
         _authorizationService = authorizationService;
         _userManager = userManager;
+        _imageStorage = imageStorage;
+        _logger = logger;
     }
 
     // GET: /Posts
@@ -96,12 +103,20 @@ public class PostsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        CreatePostViewModel model)
+        CreatePostViewModel model,
+        CancellationToken cancellationToken)
     {
+        var userId = _userManager.GetUserId(User);
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Challenge();
+        }
+
         var slugAlreadyExists = await _context.Posts
-            .AnyAsync(existingPost =>
-                existingPost.Slug == model.Slug
-            );
+            .AnyAsync(
+                existingPost => existingPost.Slug == model.Slug,
+                cancellationToken);
 
         if (slugAlreadyExists)
         {
@@ -111,16 +126,38 @@ public class PostsController : Controller
             );
         }
 
+        ImageValidationResult? imageValidation = null;
+
+        if (model.FeaturedImage is not null)
+        {
+            imageValidation = await ImageUploadValidator.ValidateAsync(
+                model.FeaturedImage,
+                cancellationToken);
+
+            if (!imageValidation.IsValid)
+            {
+                ModelState.AddModelError(
+                    nameof(model.FeaturedImage),
+                    imageValidation.ErrorMessage!);
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             return View(model);
         }
 
-        var userId = _userManager.GetUserId(User);
+        StoredImage? uploadedImage = null;
 
-        if (string.IsNullOrWhiteSpace(userId))
+        if (model.FeaturedImage is not null)
         {
-            return Challenge();
+            await using var imageStream =
+                model.FeaturedImage.OpenReadStream();
+            uploadedImage = await _imageStorage.UploadAsync(
+                imageStream,
+                imageValidation!.ContentType!,
+                imageValidation.FileExtension!,
+                cancellationToken);
         }
 
         var post = new Post
@@ -129,7 +166,8 @@ public class PostsController : Controller
             Slug = model.Slug,
             Summary = model.Summary,
             Content = model.Content,
-            ImagePath = model.ImagePath,
+            ImagePath = uploadedImage?.PublicUrl,
+            ImageObjectKey = uploadedImage?.ObjectKey,
             Category = model.Category,
             IsPublished = model.IsPublished,
             AuthorId = userId,
@@ -137,7 +175,22 @@ public class PostsController : Controller
         };
 
         _context.Posts.Add(post);
-        await _context.SaveChangesAsync();
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            if (uploadedImage is not null)
+            {
+                await DeleteImageBestEffortAsync(
+                    uploadedImage.ObjectKey,
+                    "compensating for a failed post creation");
+            }
+
+            throw;
+        }
 
         return RedirectToAction(nameof(Index));
     }
@@ -178,7 +231,7 @@ public class PostsController : Controller
             Slug = post.Slug,
             Summary = post.Summary,
             Content = post.Content,
-            ImagePath = post.ImagePath,
+            CurrentImagePath = post.ImagePath,
             Category = post.Category,
             IsPublished = post.IsPublished
         });
@@ -189,7 +242,8 @@ public class PostsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
         int id,
-        EditPostViewModel model)
+        EditPostViewModel model,
+        CancellationToken cancellationToken)
     {
         if (id != model.Id)
         {
@@ -198,7 +252,9 @@ public class PostsController : Controller
 
         var existingPost = await _context.Posts
             .Include(post => post.Author)
-            .FirstOrDefaultAsync(post => post.Id == id);
+            .FirstOrDefaultAsync(
+                post => post.Id == id,
+                cancellationToken);
 
         if (existingPost is null)
         {
@@ -216,11 +272,14 @@ public class PostsController : Controller
             return Forbid();
         }
 
+        model.CurrentImagePath = existingPost.ImagePath;
+
         var slugAlreadyExists = await _context.Posts
-            .AnyAsync(post =>
-                post.Slug == model.Slug &&
-                post.Id != model.Id
-            );
+            .AnyAsync(
+                post =>
+                    post.Slug == model.Slug &&
+                    post.Id != model.Id,
+                cancellationToken);
 
         if (slugAlreadyExists)
         {
@@ -230,21 +289,91 @@ public class PostsController : Controller
             );
         }
 
+        if (model.FeaturedImage is not null &&
+            model.RemoveFeaturedImage)
+        {
+            ModelState.AddModelError(
+                nameof(model.FeaturedImage),
+                "Choose a replacement image or remove the current image, not both.");
+        }
+
+        ImageValidationResult? imageValidation = null;
+
+        if (model.FeaturedImage is not null)
+        {
+            imageValidation = await ImageUploadValidator.ValidateAsync(
+                model.FeaturedImage,
+                cancellationToken);
+
+            if (!imageValidation.IsValid)
+            {
+                ModelState.AddModelError(
+                    nameof(model.FeaturedImage),
+                    imageValidation.ErrorMessage!);
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             return View(model);
+        }
+
+        var previousObjectKey = existingPost.ImageObjectKey;
+        StoredImage? uploadedImage = null;
+
+        if (model.FeaturedImage is not null)
+        {
+            await using var imageStream =
+                model.FeaturedImage.OpenReadStream();
+            uploadedImage = await _imageStorage.UploadAsync(
+                imageStream,
+                imageValidation!.ContentType!,
+                imageValidation.FileExtension!,
+                cancellationToken);
         }
 
         existingPost.Title = model.Title;
         existingPost.Slug = model.Slug;
         existingPost.Summary = model.Summary;
         existingPost.Content = model.Content;
-        existingPost.ImagePath = model.ImagePath;
         existingPost.Category = model.Category;
         existingPost.IsPublished = model.IsPublished;
         existingPost.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        if (uploadedImage is not null)
+        {
+            existingPost.ImagePath = uploadedImage.PublicUrl;
+            existingPost.ImageObjectKey = uploadedImage.ObjectKey;
+        }
+        else if (model.RemoveFeaturedImage)
+        {
+            existingPost.ImagePath = null;
+            existingPost.ImageObjectKey = null;
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            if (uploadedImage is not null)
+            {
+                await DeleteImageBestEffortAsync(
+                    uploadedImage.ObjectKey,
+                    "compensating for a failed post update");
+            }
+
+            throw;
+        }
+
+        if (!string.IsNullOrWhiteSpace(previousObjectKey) &&
+            (uploadedImage is not null || model.RemoveFeaturedImage))
+        {
+            await DeleteImageBestEffortAsync(
+                previousObjectKey,
+                "cleaning up a replaced or removed featured image");
+        }
 
         return RedirectToAction(nameof(Index));
     }
@@ -281,11 +410,15 @@ public class PostsController : Controller
     // POST: /Posts/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(
+        int id,
+        CancellationToken cancellationToken)
     {
         var post = await _context.Posts
             .Include(post => post.Author)
-            .FirstOrDefaultAsync(post => post.Id == id);
+            .FirstOrDefaultAsync(
+                post => post.Id == id,
+                cancellationToken);
 
         if (post is null)
         {
@@ -303,9 +436,38 @@ public class PostsController : Controller
             return Forbid();
         }
 
+        var objectKey = post.ImageObjectKey;
+
         _context.Posts.Remove(post);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(objectKey))
+        {
+            await DeleteImageBestEffortAsync(
+                objectKey,
+                "cleaning up a deleted post");
+        }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task DeleteImageBestEffortAsync(
+        string objectKey,
+        string operation)
+    {
+        try
+        {
+            await _imageStorage.DeleteAsync(
+                objectKey,
+                CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Failed to delete image object {ObjectKey} while {Operation}.",
+                objectKey,
+                operation);
+        }
     }
 }

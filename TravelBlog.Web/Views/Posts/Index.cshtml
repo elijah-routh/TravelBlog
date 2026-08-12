@@ -49,7 +49,7 @@
                             @if (!string.IsNullOrWhiteSpace(post.ImagePath))
                             {
                                 <img
-                                    src="@post.ImagePath"
+                                    src="@Url.Content(post.ImagePath)"
                                     class="card-img-top"
                                     alt="@post.Title" />
                             }

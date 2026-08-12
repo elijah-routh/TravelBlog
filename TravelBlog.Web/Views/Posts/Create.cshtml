@@ -13,6 +13,7 @@
                 <form
                     asp-controller="Posts"
                     asp-action="Create"
+                    enctype="multipart/form-data"
                     method="post">
 
                     <div
@@ -121,22 +122,23 @@
 
                     <div class="mb-3">
                         <label
-                            asp-for="ImagePath"
+                            asp-for="FeaturedImage"
                             class="form-label">
                         </label>
 
                         <input
-                            asp-for="ImagePath"
-                            class="form-control"
-                            placeholder="/images/CountryPictures/ColcaCanyonIcon.jpg" />
+                            asp-for="FeaturedImage"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            class="form-control" />
 
                         <div class="form-text">
-                            Enter the path to an image stored inside
-                            wwwroot.
+                            Optional. Choose a JPEG, PNG, WebP, or GIF image
+                            up to 5 MB.
                         </div>
 
                         <span
-                            asp-validation-for="ImagePath"
+                            asp-validation-for="FeaturedImage"
                             class="text-danger">
                         </span>
                     </div>

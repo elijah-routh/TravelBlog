@@ -14,6 +14,7 @@
                     asp-controller="Posts"
                     asp-action="Edit"
                     asp-route-id="@Model.Id"
+                    enctype="multipart/form-data"
                     method="post">
 
                     <input asp-for="Id" type="hidden" />
@@ -115,20 +116,50 @@
                     </div>
 
                     <div class="mb-3">
+                        @if (!string.IsNullOrWhiteSpace(Model.CurrentImagePath))
+                        {
+                            <p class="form-label">Current featured image</p>
+                            <img
+                                src="@Url.Content(Model.CurrentImagePath)"
+                                class="img-fluid rounded mb-3"
+                                alt="Current featured image for @Model.Title" />
+                        }
+
                         <label
-                            asp-for="ImagePath"
+                            asp-for="FeaturedImage"
                             class="form-label">
                         </label>
 
                         <input
-                            asp-for="ImagePath"
+                            asp-for="FeaturedImage"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
                             class="form-control" />
 
+                        <div class="form-text">
+                            Choose a JPEG, PNG, WebP, or GIF image up to 5 MB.
+                            Selecting a new image replaces the current image.
+                        </div>
+
                         <span
-                            asp-validation-for="ImagePath"
+                            asp-validation-for="FeaturedImage"
                             class="text-danger">
                         </span>
                     </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CurrentImagePath))
+                    {
+                        <div class="form-check mb-4">
+                            <input
+                                asp-for="RemoveFeaturedImage"
+                                class="form-check-input" />
+
+                            <label
+                                asp-for="RemoveFeaturedImage"
+                                class="form-check-label">
+                            </label>
+                        </div>
+                    }
 
                     <div class="form-check mb-4">
                         <input

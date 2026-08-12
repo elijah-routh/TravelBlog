@@ -1,9 +1,12 @@
+using Amazon.Runtime;
+using Amazon.S3;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TravelBlog.Web.Authorization;
 using TravelBlog.Web.Data;
 using TravelBlog.Web.Models;
+using TravelBlog.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +29,51 @@ if (!builder.Environment.IsEnvironment("Testing"))
     {
         options.UseNpgsql(connectionString);
     });
+
+    builder.Services
+        .AddOptions<ObjectStorageOptions>()
+        .Bind(builder.Configuration.GetSection(
+            ObjectStorageOptions.SectionName))
+        .ValidateDataAnnotations()
+        .Validate(
+            options => Uri.TryCreate(
+                options.Endpoint,
+                UriKind.Absolute,
+                out _),
+            "ObjectStorage:Endpoint must be an absolute URL.")
+        .Validate(
+            options => Uri.TryCreate(
+                options.PublicBaseUrl,
+                UriKind.Absolute,
+                out _),
+            "ObjectStorage:PublicBaseUrl must be an absolute URL.")
+        .ValidateOnStart();
+
+    builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<
+                Microsoft.Extensions.Options.IOptions<
+                    ObjectStorageOptions>>()
+            .Value;
+
+        var credentials = new BasicAWSCredentials(
+            options.AccessKey,
+            options.SecretKey);
+        var configuration = new AmazonS3Config
+        {
+            ServiceURL = options.Endpoint,
+            AuthenticationRegion = options.Region,
+            ForcePathStyle = options.ForcePathStyle,
+            RequestChecksumCalculation =
+                RequestChecksumCalculation.WHEN_REQUIRED,
+            ResponseChecksumValidation =
+                ResponseChecksumValidation.WHEN_REQUIRED
+        };
+
+        return new AmazonS3Client(credentials, configuration);
+    });
+    builder.Services.AddSingleton<IImageStorage, S3ImageStorage>();
 }
 
 builder.Services
