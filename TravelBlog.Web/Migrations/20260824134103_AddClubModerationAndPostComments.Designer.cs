@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TravelBlog.Web.Data;
@@ -11,9 +12,11 @@ using TravelBlog.Web.Data;
 namespace TravelBlog.Web.Migrations
 {
     [DbContext(typeof(BlogDbContext))]
-    partial class BlogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260824134103_AddClubModerationAndPostComments")]
+    partial class AddClubModerationAndPostComments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -284,33 +287,6 @@ namespace TravelBlog.Web.Migrations
                     b.ToTable("BookClubMemberships");
                 });
 
-            modelBuilder.Entity("TravelBlog.Web.Models.BookDiscussionThread", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ClubBookId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClubBookId", "Title")
-                        .IsUnique();
-
-                    b.ToTable("BookDiscussionThreads");
-                });
-
             modelBuilder.Entity("TravelBlog.Web.Models.ClubBook", b =>
                 {
                     b.Property<int>("Id")
@@ -329,12 +305,6 @@ namespace TravelBlog.Web.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ImageObjectKey")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ImagePath")
-                        .HasColumnType("text");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
@@ -404,9 +374,6 @@ namespace TravelBlog.Web.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<int?>("BookDiscussionThreadId")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("ClubBookId")
                         .HasColumnType("integer");
 
@@ -425,8 +392,6 @@ namespace TravelBlog.Web.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
-
-                    b.HasIndex("BookDiscussionThreadId");
 
                     b.HasIndex("ClubBookId");
 
@@ -515,9 +480,6 @@ namespace TravelBlog.Web.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("PostId")
                         .HasColumnType("integer");
 
@@ -527,8 +489,6 @@ namespace TravelBlog.Web.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
-
-                    b.HasIndex("ParentId");
 
                     b.HasIndex("PostId");
 
@@ -616,17 +576,6 @@ namespace TravelBlog.Web.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TravelBlog.Web.Models.BookDiscussionThread", b =>
-                {
-                    b.HasOne("TravelBlog.Web.Models.ClubBook", "ClubBook")
-                        .WithMany("DiscussionThreads")
-                        .HasForeignKey("ClubBookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ClubBook");
-                });
-
             modelBuilder.Entity("TravelBlog.Web.Models.ClubBook", b =>
                 {
                     b.HasOne("TravelBlog.Web.Models.BookClub", "Club")
@@ -665,11 +614,6 @@ namespace TravelBlog.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TravelBlog.Web.Models.BookDiscussionThread", "BookDiscussionThread")
-                        .WithMany("Posts")
-                        .HasForeignKey("BookDiscussionThreadId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("TravelBlog.Web.Models.ClubBook", "ClubBook")
                         .WithMany("DiscussionPosts")
                         .HasForeignKey("ClubBookId")
@@ -687,8 +631,6 @@ namespace TravelBlog.Web.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Author");
-
-                    b.Navigation("BookDiscussionThread");
 
                     b.Navigation("Club");
 
@@ -716,11 +658,6 @@ namespace TravelBlog.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TravelBlog.Web.Models.PostComment", "Parent")
-                        .WithMany("Replies")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("TravelBlog.Web.Models.Post", "Post")
                         .WithMany("Comments")
                         .HasForeignKey("PostId")
@@ -728,8 +665,6 @@ namespace TravelBlog.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Author");
-
-                    b.Navigation("Parent");
 
                     b.Navigation("Post");
                 });
@@ -760,16 +695,9 @@ namespace TravelBlog.Web.Migrations
                     b.Navigation("Notices");
                 });
 
-            modelBuilder.Entity("TravelBlog.Web.Models.BookDiscussionThread", b =>
-                {
-                    b.Navigation("Posts");
-                });
-
             modelBuilder.Entity("TravelBlog.Web.Models.ClubBook", b =>
                 {
                     b.Navigation("DiscussionPosts");
-
-                    b.Navigation("DiscussionThreads");
                 });
 
             modelBuilder.Entity("TravelBlog.Web.Models.DiscussionPost", b =>
@@ -780,11 +708,6 @@ namespace TravelBlog.Web.Migrations
             modelBuilder.Entity("TravelBlog.Web.Models.Post", b =>
                 {
                     b.Navigation("Comments");
-                });
-
-            modelBuilder.Entity("TravelBlog.Web.Models.PostComment", b =>
-                {
-                    b.Navigation("Replies");
                 });
 #pragma warning restore 612, 618
         }

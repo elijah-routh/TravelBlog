@@ -1,0 +1,69 @@
+@model DiscussionPost
+
+@{
+    ViewData["Title"] = "Delete Message";
+    var clubSlug = ViewData["ClubSlug"] as string;
+    var clubBookId = ViewData["ClubBookId"] as int?;
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12 col-lg-7">
+                <div class="card border-danger">
+                    <div class="card-body">
+                        <h1 class="card-title h2 text-danger">
+                            Delete Message
+                        </h1>
+
+                        <p>
+                            Are you sure you want to delete this message?
+                            @if (Model.ParentId is null)
+                            {
+                                <text>Any replies will also be removed.</text>
+                            }
+                        </p>
+
+                        <p class="club-discussion-body">@Model.Body</p>
+                        <p class="small text-muted">
+                            @Model.Author.DisplayName ·
+                            @Model.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy h:mm tt")
+                        </p>
+
+                        <form
+                            asp-controller="DiscussionPosts"
+                            asp-action="Delete"
+                            asp-route-slug="@clubSlug"
+                            asp-route-id="@Model.Id"
+                            method="post">
+                            <button type="submit" class="btn btn-danger">
+                                Delete Permanently
+                            </button>
+                            @if (clubBookId is int bookId)
+                            {
+                                <a
+                                    asp-controller="ClubBooks"
+                                    asp-action="Details"
+                                    asp-route-clubSlug="@clubSlug"
+                                    asp-route-bookId="@bookId"
+                                    class="btn btn-outline-secondary">
+                                    Cancel
+                                </a>
+                            }
+                            else
+                            {
+                                <a
+                                    asp-controller="BookClubs"
+                                    asp-action="Details"
+                                    asp-route-slug="@clubSlug"
+                                    class="btn btn-outline-secondary">
+                                    Cancel
+                                </a>
+                            }
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

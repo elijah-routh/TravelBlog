@@ -1,0 +1,51 @@
+@model AddClubBookViewModel
+
+@{
+    ViewData["Title"] = "Edit Book";
+    var clubSlug = ViewData["ClubSlug"] as string;
+    var clubName = ViewData["ClubName"] as string ?? "Book Club";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12 col-lg-8">
+                <h1 class="mb-2">Edit Book</h1>
+                <p class="text-muted mb-4">@clubName</p>
+
+                <form
+                    asp-controller="ClubBooks"
+                    asp-action="Edit"
+                    asp-route-clubSlug="@clubSlug"
+                    asp-route-bookId="@ViewContext.RouteData.Values["bookId"]"
+                    enctype="multipart/form-data"
+                    method="post">
+
+                    <div
+                        asp-validation-summary="ModelOnly"
+                        class="alert alert-danger">
+                    </div>
+
+                    <partial name="_ClubBookFormFields" />
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+
+                    <a
+                        asp-controller="ClubBooks"
+                        asp-action="Details"
+                        asp-route-clubSlug="@clubSlug"
+                        asp-route-bookId="@ViewContext.RouteData.Values["bookId"]"
+                        class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

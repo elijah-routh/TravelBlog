@@ -328,6 +328,306 @@ body {
     padding: 2.5rem;
 }
 
+/* Book clubs */
+.club-panel {
+    padding: 1.75rem;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.club-overview-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+.club-overview-main > .club-panel {
+    height: 100%;
+}
+
+.club-notices-panel {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.notice-add-toggle {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #c9c1b3;
+    border-radius: 50%;
+    background: transparent;
+    color: #59636d;
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.notice-add-toggle:hover {
+    border-color: #59636d;
+    background: #f7f3eb;
+    color: #252525;
+}
+
+.club-notice-list .club-notice + .club-notice,
+.club-discussion-list .club-discussion-post + .club-discussion-post {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e7dfd0;
+}
+
+.club-discussion-replies {
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
+    border-left: 3px solid #e7dfd0;
+}
+
+.club-discussion-reply {
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.icon-action,
+.reply-toggle {
+    display: inline-flex;
+    min-width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.4rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #646464;
+    font-size: 0.85rem;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.icon-action:hover,
+.reply-toggle:hover {
+    background: #eee8dc;
+    color: #252525;
+}
+
+.icon-action-danger:hover {
+    background: #fff0ee;
+    color: #a2352d;
+}
+
+.reply-toggle {
+    width: auto;
+    font-weight: 600;
+}
+
+.compact-reply-form {
+    max-width: 560px;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f7f3eb;
+}
+
+.book-discussion-tabs {
+    overflow-x: auto;
+}
+
+.book-discussion-tabs .nav {
+    flex-wrap: nowrap;
+}
+
+.book-discussion-tabs .nav-link {
+    flex: 0 0 auto;
+    color: #59636d;
+}
+
+.book-discussion-tabs .nav-link.active {
+    color: #252525;
+    font-weight: 700;
+}
+
+.club-notice-body,
+.club-discussion-body {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.club-timeline {
+    position: relative;
+    margin: 0;
+    padding: 0 0 0 1.5rem;
+    list-style: none;
+    border-left: 3px solid #303b36;
+}
+
+.club-timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+    padding-left: 1.25rem;
+}
+
+.club-timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.club-timeline-item::before {
+    position: absolute;
+    top: 0.4rem;
+    left: -0.55rem;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #303b36;
+    border-radius: 50%;
+    background: #f7f3eb;
+    content: "";
+}
+
+.book-cover-placeholder {
+    display: flex;
+    min-height: 220px;
+    align-items: center;
+    justify-content: center;
+    background: #e7dfd0;
+    color: #746b5c;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.book-club-current {
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.book-club-current-cover {
+    width: 112px;
+    height: auto;
+    aspect-ratio: 13 / 19;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.travel-card .book-club-current-cover {
+    width: 112px;
+    height: auto;
+}
+
+.book-club-current-cover.book-cover-placeholder {
+    min-height: 0;
+    text-align: center;
+}
+
+.current-book-card {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) 1fr;
+    gap: 2rem;
+    align-items: center;
+}
+
+.current-book-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 13 / 19;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.current-book-cover.book-cover-placeholder {
+    min-height: 0;
+    height: auto;
+}
+
+.book-timeline-content {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.book-timeline-cover {
+    width: 72px;
+    height: auto;
+    aspect-ratio: 13 / 19;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.timeline-status-badge {
+    color: #fff !important;
+}
+
+.timeline-status-current {
+    background: #26734d !important;
+}
+
+.timeline-status-upcoming {
+    background: #59636d !important;
+}
+
+.timeline-status-past {
+    background: #303b36 !important;
+}
+
+.timeline-club-link {
+    background: transparent !important;
+    color: #6c757d !important;
+}
+
+.timeline-club-link:hover {
+    color: #59636d !important;
+    text-decoration: underline !important;
+}
+
+.book-cover-form-preview,
+.book-detail-cover {
+    width: 180px;
+    height: auto;
+    aspect-ratio: 13 / 19;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.book-detail-hero {
+    display: grid;
+    grid-template-columns: minmax(180px, 230px) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+    padding: 1.75rem;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.book-detail-cover {
+    width: 100%;
+    max-width: 230px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.book-detail-summary {
+    min-width: 0;
+}
+
+.book-detail-notes {
+    max-width: 760px;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
 /* Footer */
 .site-footer {
     padding: 30px 15px;
@@ -421,6 +721,32 @@ body {
     .account-manage-content {
         min-height: 0;
         padding: 1.5rem;
+    }
+
+    .current-book-card {
+        grid-template-columns: 1fr;
+    }
+
+    .book-detail-hero {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 1.25rem;
+    }
+
+    .book-detail-cover {
+        max-width: 260px;
+    }
+
+    .club-overview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .club-notices-panel {
+        max-height: 360px;
+    }
+
+    .current-book-cover {
+        max-width: 280px;
     }
 }
 

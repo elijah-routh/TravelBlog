@@ -1,0 +1,63 @@
+@model EditDiscussionPostViewModel
+
+@{
+    ViewData["Title"] = "Edit Message";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12 col-lg-8">
+                <h1 class="mb-4">Edit Message</h1>
+
+                <form
+                    asp-controller="DiscussionPosts"
+                    asp-action="Edit"
+                    asp-route-slug="@Model.ClubSlug"
+                    asp-route-id="@Model.Id"
+                    method="post">
+
+                    <div
+                        asp-validation-summary="ModelOnly"
+                        class="alert alert-danger">
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Body" class="form-label"></label>
+                        <textarea asp-for="Body" class="form-control" rows="5"></textarea>
+                        <span asp-validation-for="Body" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+                    @if (Model.ClubBookId is int bookId)
+                    {
+                        <a
+                            asp-controller="ClubBooks"
+                            asp-action="Details"
+                            asp-route-clubSlug="@Model.ClubSlug"
+                            asp-route-bookId="@bookId"
+                            class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    }
+                    else
+                    {
+                        <a
+                            asp-controller="BookClubs"
+                            asp-action="Details"
+                            asp-route-slug="@Model.ClubSlug"
+                            class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

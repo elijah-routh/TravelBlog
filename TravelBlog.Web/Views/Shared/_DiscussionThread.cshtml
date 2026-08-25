@@ -1,0 +1,17 @@
+@model DiscussionThreadViewModel
+
+@if (Model.Posts.Count == 0)
+{
+    <p class="text-muted">No discussion posts yet.</p>
+}
+else
+{
+    <ul class="list-unstyled club-discussion-list">
+        @foreach (var post in Model.Posts)
+        {
+            <li class="club-discussion-post">
+                <partial name="_DiscussionPost" model="post" />
+            </li>
+        }
+    </ul>
+}

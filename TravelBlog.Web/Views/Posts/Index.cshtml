@@ -108,8 +108,18 @@
                                     @if (User.IsInRole(RoleNames.Admin) ||
                                         post.AuthorId == UserManager.GetUserId(User))
                                     {
-                                        <a asp-action="Edit" asp-route-id="@post.Id" class="btn btn-outline-secondary">Edit</a>
-                                        <a asp-action="Delete" asp-route-id="@post.Id" class="btn btn-outline-danger">Delete</a>
+                                        <a
+                                            asp-action="Edit"
+                                            asp-route-id="@post.Id"
+                                            class="icon-action"
+                                            title="Edit post"
+                                            aria-label="Edit @post.Title">&#9998;</a>
+                                        <a
+                                            asp-action="Delete"
+                                            asp-route-id="@post.Id"
+                                            class="icon-action icon-action-danger"
+                                            title="Delete post"
+                                            aria-label="Delete @post.Title">&#128465;</a>
                                     }
                                 </div>
                             </div>

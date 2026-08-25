@@ -47,7 +47,7 @@ public class Post
     [Required(ErrorMessage = "A category is required.")]
     [EnumDataType(typeof(PostCategory), ErrorMessage = "Select a valid category.")]
     [Display(Name = "Category")]
-    public PostCategory Category { get; set; } = PostCategory.ParodyEditorial;
+    public PostCategory Category { get; set; } = PostCategory.LiteratureAndStuff;
 
     [Display(Name = "Published")]
     public bool IsPublished { get; set; }
@@ -57,4 +57,6 @@ public class Post
 
     [Display(Name = "Last updated")]
     public DateTime? UpdatedAt { get; set; }
+
+    public ICollection<PostComment> Comments { get; set; } = [];
 }

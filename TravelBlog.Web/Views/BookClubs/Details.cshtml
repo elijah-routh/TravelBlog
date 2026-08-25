@@ -1,0 +1,235 @@
+@model BookClubDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Name;
+    var showNoticeForm =
+        ViewData.ModelState["NewNotice.Body"]?.Errors.Count > 0;
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div>
+                <p class="text-uppercase small text-muted mb-1">Book Club</p>
+                <h1 class="mb-2">@Model.Name</h1>
+                <p class="text-muted mb-0">
+                    @Model.MemberCount
+                    @(Model.MemberCount == 1 ? "member" : "members")
+                </p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                @if (Model.IsAdmin)
+                {
+                    <a
+                        asp-controller="BookClubs"
+                        asp-action="Edit"
+                        asp-route-slug="@Model.Slug"
+                        class="icon-action"
+                        title="Edit club"
+                        aria-label="Edit club">
+                        &#9998;
+                    </a>
+                    <a
+                        asp-controller="BookClubs"
+                        asp-action="Delete"
+                        asp-route-slug="@Model.Slug"
+                        class="icon-action icon-action-danger"
+                        title="Delete club"
+                        aria-label="Delete club">
+                        &#128465;
+                    </a>
+                    <a
+                        asp-controller="ClubBooks"
+                        asp-action="Create"
+                        asp-route-clubSlug="@Model.Slug"
+                        class="btn btn-outline-primary">
+                        Add Book
+                    </a>
+                }
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    if (Model.IsMember)
+                    {
+                        <form
+                            asp-controller="BookClubs"
+                            asp-action="Leave"
+                            asp-route-slug="@Model.Slug"
+                            method="post">
+                            <button type="submit" class="btn btn-outline-danger">
+                                Leave Club
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form
+                            asp-controller="BookClubs"
+                            asp-action="Join"
+                            asp-route-slug="@Model.Slug"
+                            method="post">
+                            <button type="submit" class="btn btn-primary">
+                                Join Club
+                            </button>
+                        </form>
+                    }
+                }
+                else
+                {
+                    <a
+                        asp-area="Identity"
+                        asp-page="/Account/Login"
+                        asp-route-returnUrl="@Context.Request.Path"
+                        class="btn btn-primary">
+                        Log in to join
+                    </a>
+                }
+            </div>
+        </div>
+
+        @if (TempData["StatusMessage"] is string status)
+        {
+            <div class="alert alert-success">@status</div>
+        }
+        @if (TempData["ErrorMessage"] is string error)
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p class="lead">@Model.Description</p>
+        }
+
+        <div class="club-overview-grid mb-5">
+            <div class="club-overview-main">
+                <partial name="_BookView" model="Model" />
+            </div>
+
+            <aside class="club-panel club-notices-panel">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h4 mb-0">Notices</h2>
+                    @if (Model.IsAdmin)
+                    {
+                        <button
+                            type="button"
+                            class="notice-add-toggle"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#notice-form"
+                            aria-expanded="@showNoticeForm.ToString().ToLowerInvariant()"
+                            aria-controls="notice-form"
+                            title="Post a notice"
+                            aria-label="Post a notice">
+                            +
+                        </button>
+                    }
+                </div>
+
+                @if (Model.IsAdmin)
+                {
+                    <div class="collapse @(showNoticeForm ? "show" : null)" id="notice-form">
+                        <form
+                            asp-controller="BookClubs"
+                            asp-action="AddNotice"
+                            asp-route-slug="@Model.Slug"
+                            method="post"
+                            class="compact-reply-form mb-3">
+                            <div class="mb-2">
+                                <label asp-for="NewNotice.Body" class="form-label"></label>
+                                <textarea
+                                    asp-for="NewNotice.Body"
+                                    class="form-control"
+                                    rows="3"
+                                    placeholder="Share a notice with the club.">
+                                </textarea>
+                                <span asp-validation-for="NewNotice.Body" class="text-danger"></span>
+                            </div>
+                            <button type="submit" class="btn btn-dark btn-sm">
+                                Post Notice
+                            </button>
+                        </form>
+                    </div>
+                }
+
+                @if (Model.Notices.Count == 0)
+                {
+                    <p class="text-muted mb-0">No notices have been posted yet.</p>
+                }
+                else
+                {
+                    <ul class="list-unstyled club-notice-list mb-0">
+                        @foreach (var notice in Model.Notices)
+                        {
+                            <li class="club-notice">
+                                <p class="club-notice-body mb-1">@notice.Body</p>
+                                <p class="small text-muted mb-0">
+                                    @notice.AuthorDisplayName ·
+                                    @notice.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy")
+                                </p>
+                            </li>
+                        }
+                    </ul>
+                }
+            </aside>
+        </div>
+
+        <section class="club-panel">
+            <h2 class="h4 mb-3">Club discussion</h2>
+
+            @if (Model.DiscussionPosts.Count == 0)
+            {
+                <p class="text-muted">No discussion posts yet.</p>
+            }
+            else
+            {
+                <partial
+                    name="_DiscussionThread"
+                    model="@(new DiscussionThreadViewModel { ClubSlug = Model.Slug, Posts = Model.DiscussionPosts })" />
+            }
+
+            @if (Model.CanPost)
+            {
+                <form
+                    asp-controller="BookClubs"
+                    asp-action="AddDiscussion"
+                    asp-route-slug="@Model.Slug"
+                    method="post">
+                    <div class="mb-2">
+                        <label asp-for="NewDiscussion.Body" class="form-label"></label>
+                        <textarea
+                            asp-for="NewDiscussion.Body"
+                            class="form-control"
+                            rows="4"
+                            placeholder="Write a message for the club.">
+                        </textarea>
+                        <span asp-validation-for="NewDiscussion.Body" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        Post Message
+                    </button>
+                </form>
+            }
+            else if (User.Identity?.IsAuthenticated == true)
+            {
+                <p class="text-muted mb-0">Join the club to post in the discussion.</p>
+            }
+            else
+            {
+                <p class="text-muted mb-0">
+                    <a
+                        asp-area="Identity"
+                        asp-page="/Account/Login"
+                        asp-route-returnUrl="@Context.Request.Path">
+                        Log in
+                    </a>
+                    and join to post in the discussion.
+                </p>
+            }
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

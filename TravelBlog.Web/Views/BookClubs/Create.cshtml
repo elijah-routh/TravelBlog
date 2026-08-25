@@ -1,0 +1,43 @@
+@model BookClubFormViewModel
+
+@{
+    ViewData["Title"] = "Create Book Club";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12 col-lg-8">
+                <h1 class="mb-4">Create a Book Club</h1>
+
+                <form
+                    asp-controller="BookClubs"
+                    asp-action="Create"
+                    method="post">
+
+                    <div
+                        asp-validation-summary="ModelOnly"
+                        class="alert alert-danger">
+                    </div>
+
+                    <partial name="_BookClubFormFields" />
+
+                    <button type="submit" class="btn btn-primary">
+                        Create Club
+                    </button>
+
+                    <a
+                        asp-controller="BookClubs"
+                        asp-action="Index"
+                        class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

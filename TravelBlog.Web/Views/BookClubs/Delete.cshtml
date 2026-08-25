@@ -1,0 +1,51 @@
+@model BookClub
+
+@{
+    ViewData["Title"] = "Delete Book Club";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12 col-lg-7">
+                <div class="card border-danger">
+                    <div class="card-body">
+                        <h1 class="card-title h2 text-danger">
+                            Delete Book Club
+                        </h1>
+
+                        <p>
+                            Are you sure you want to permanently delete
+                            this book club? Books, notices, memberships,
+                            and discussions will be removed.
+                        </p>
+
+                        <h2 class="h4">@Model.Name</h2>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Description))
+                        {
+                            <p class="text-muted">@Model.Description</p>
+                        }
+
+                        <form
+                            asp-controller="BookClubs"
+                            asp-action="Delete"
+                            asp-route-slug="@Model.Slug"
+                            method="post">
+                            <button type="submit" class="btn btn-danger">
+                                Delete Permanently
+                            </button>
+                            <a
+                                asp-controller="BookClubs"
+                                asp-action="Details"
+                                asp-route-slug="@Model.Slug"
+                                class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

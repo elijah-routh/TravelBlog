@@ -1,4 +1,12 @@
 ﻿@using TravelBlog.Web.Authorization
+@{
+    var pageTitle = ViewData["Title"] as string;
+    var documentTitle =
+        string.IsNullOrWhiteSpace(pageTitle) ||
+        string.Equals(pageTitle, "Home", StringComparison.OrdinalIgnoreCase)
+            ? "Giant Lampoon"
+            : $"{pageTitle} - Giant Lampoon";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,9 +18,9 @@
 
     <meta
         name="description"
-        content="Giant Lampoon — parody editorials, short stories, and real news." />
+        content="Giant Lampoon — literature and stuff, fiction and satire, and other writing." />
 
-    <title>@ViewData["Title"] - Giant Lampoon</title>
+    <title>@documentTitle</title>
 
     <!-- Bootstrap CSS stored in wwwroot/lib -->
     <link
@@ -60,6 +68,14 @@
                                 asp-controller="Home"
                                 asp-action="Index">
                                 Home
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a
+                                class="nav-link"
+                                asp-controller="BookClubs"
+                                asp-action="Index">
+                                Book Clubs
                             </a>
                         </li>
 

@@ -1,0 +1,60 @@
+@model AddClubBookViewModel
+
+<div class="mb-3">
+    <label asp-for="Title" class="form-label"></label>
+    <input asp-for="Title" class="form-control" />
+    <span asp-validation-for="Title" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="AuthorName" class="form-label"></label>
+    <input asp-for="AuthorName" class="form-control" />
+    <span asp-validation-for="AuthorName" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="ReadingDate" class="form-label"></label>
+    <input asp-for="ReadingDate" class="form-control" type="date" />
+    <div class="form-text">
+        Books appear on the timeline in reading-date order.
+        The latest date that is today or earlier is the current book.
+    </div>
+    <span asp-validation-for="ReadingDate" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="CoverImage" class="form-label"></label>
+    @if (!string.IsNullOrWhiteSpace(Model.CurrentImagePath))
+    {
+        <div class="mb-2">
+            <img
+                src="@Model.CurrentImagePath"
+                class="book-cover-form-preview"
+                alt="Current cover for @Model.Title" />
+        </div>
+    }
+    <input
+        asp-for="CoverImage"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        class="form-control" />
+    <div class="form-text">
+        JPEG, PNG, WebP, or GIF, up to 5 MB.
+        @if (!string.IsNullOrWhiteSpace(Model.CurrentImagePath))
+        {
+            <text>Choose a file only to replace the current cover.</text>
+        }
+    </div>
+    <span asp-validation-for="CoverImage" class="text-danger"></span>
+</div>
+
+<div class="mb-4">
+    <label asp-for="Notes" class="form-label"></label>
+    <textarea
+        asp-for="Notes"
+        class="form-control"
+        rows="4"
+        placeholder="Optional notes for readers.">
+    </textarea>
+    <span asp-validation-for="Notes" class="text-danger"></span>
+</div>

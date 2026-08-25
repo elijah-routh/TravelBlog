@@ -1,0 +1,106 @@
+@model DiscussionPostItemViewModel
+
+<p class="fw-semibold mb-1">@Model.AuthorDisplayName</p>
+<p class="club-discussion-body mb-1">@Model.Body</p>
+<p class="small text-muted mb-2">
+    @Model.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy h:mm tt")
+    @if (Model.UpdatedAt is not null)
+    {
+        <text>· edited</text>
+    }
+</p>
+
+@if (Model.CanEdit || Model.CanDelete || Model.CanReply)
+{
+    <div class="comment-actions mb-2">
+        @if (Model.CanEdit)
+        {
+            <a
+                asp-controller="DiscussionPosts"
+                asp-action="Edit"
+                asp-route-slug="@Model.ClubSlug"
+                asp-route-id="@Model.Id"
+                class="icon-action"
+                title="Edit message"
+                aria-label="Edit message">
+                &#9998;
+            </a>
+        }
+        @if (Model.CanDelete)
+        {
+            <a
+                asp-controller="DiscussionPosts"
+                asp-action="Delete"
+                asp-route-slug="@Model.ClubSlug"
+                asp-route-id="@Model.Id"
+                class="icon-action icon-action-danger"
+                title="Delete message"
+                aria-label="Delete message">
+                &#128465;
+            </a>
+        }
+        @if (Model.CanReply)
+        {
+            <button
+                type="button"
+                class="reply-toggle"
+                data-bs-toggle="collapse"
+                data-bs-target="#discussion-reply-@Model.Id"
+                aria-expanded="false"
+                aria-controls="discussion-reply-@Model.Id">
+                Reply
+            </button>
+        }
+    </div>
+}
+
+@if (Model.CanReply)
+{
+    <div class="collapse" id="discussion-reply-@Model.Id">
+        <form
+            asp-controller="DiscussionPosts"
+            asp-action="Reply"
+            asp-route-slug="@Model.ClubSlug"
+            asp-route-id="@Model.Id"
+            method="post"
+            class="compact-reply-form mb-3">
+            <label class="form-label visually-hidden" for="reply-@Model.Id">
+                Reply
+            </label>
+            <textarea
+                name="Body"
+                id="reply-@Model.Id"
+                class="form-control form-control-sm mb-2"
+                rows="2"
+                maxlength="2000"
+                placeholder="Write a reply."
+                required></textarea>
+            <button type="submit" class="btn btn-sm btn-outline-primary">
+                Post Reply
+            </button>
+        </form>
+    </div>
+}
+
+@if (Model.Replies.Count > 0)
+{
+    <button
+        type="button"
+        class="reply-toggle"
+        data-bs-toggle="collapse"
+        data-bs-target="#discussion-thread-@Model.Id"
+        aria-expanded="false"
+        aria-controls="discussion-thread-@Model.Id">
+        @Model.Replies.Count @(Model.Replies.Count == 1 ? "reply" : "replies")
+    </button>
+    <div class="collapse" id="discussion-thread-@Model.Id">
+        <ul class="list-unstyled club-discussion-replies">
+            @foreach (var reply in Model.Replies)
+            {
+                <li class="club-discussion-post club-discussion-reply">
+                    <partial name="_DiscussionPost" model="reply" />
+                </li>
+            }
+        </ul>
+    </div>
+}

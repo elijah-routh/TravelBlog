@@ -4,12 +4,12 @@ namespace TravelBlog.Web.Models;
 
 public enum PostCategory
 {
-    [Display(Name = "Parody Editorial")]
-    ParodyEditorial = 1,
+    [Display(Name = "Literature and Stuff")]
+    LiteratureAndStuff = 1,
 
-    [Display(Name = "Short Stories")]
-    ShortStory = 2,
+    [Display(Name = "Fiction and Satire")]
+    FictionAndSatire = 2,
 
-    [Display(Name = "Real News")]
-    RealNews = 3
+    [Display(Name = "Other")]
+    Other = 3
 }

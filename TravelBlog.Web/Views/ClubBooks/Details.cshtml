@@ -1,0 +1,240 @@
+@model ClubBookDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<section class="content-section">
+    <div class="container">
+        <p class="mb-2">
+            <a
+                asp-controller="BookClubs"
+                asp-action="Details"
+                asp-route-slug="@Model.ClubSlug">
+                ← @Model.ClubName
+            </a>
+        </p>
+
+        @if (TempData["StatusMessage"] is string status)
+        {
+            <div class="alert alert-success">@status</div>
+        }
+        @if (TempData["ErrorMessage"] is string error)
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <article class="book-detail-hero mb-5">
+            @if (!string.IsNullOrWhiteSpace(Model.ImagePath))
+            {
+                <img
+                    src="@Model.ImagePath"
+                    class="book-detail-cover"
+                    alt="Cover of @Model.Title" />
+            }
+            else
+            {
+                <div class="book-detail-cover book-cover-placeholder">
+                    No cover yet
+                </div>
+            }
+
+            <div class="book-detail-summary">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge timeline-status-badge @(Model.Status == ClubBookTimeline.Current ? "timeline-status-current" : Model.Status == ClubBookTimeline.Upcoming ? "timeline-status-upcoming" : "timeline-status-past")">
+                            @Model.Status
+                        </span>
+                        <time class="small text-muted">
+                            @Model.ReadingDate.ToString("MMMM d, yyyy")
+                        </time>
+                    </div>
+
+                    @if (Model.IsAdmin)
+                    {
+                        <div class="d-flex align-items-center gap-1">
+                            <a
+                                asp-controller="ClubBooks"
+                                asp-action="Edit"
+                                asp-route-clubSlug="@Model.ClubSlug"
+                                asp-route-bookId="@Model.Id"
+                                class="icon-action"
+                                title="Edit book"
+                                aria-label="Edit book">
+                                &#9998;
+                            </a>
+                            <a
+                                asp-controller="ClubBooks"
+                                asp-action="Delete"
+                                asp-route-clubSlug="@Model.ClubSlug"
+                                asp-route-bookId="@Model.Id"
+                                class="icon-action icon-action-danger"
+                                title="Delete book"
+                                aria-label="Delete book">
+                                &#128465;
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <h1 class="mb-1">@Model.Title</h1>
+                <p class="lead mb-3">@Model.AuthorName</p>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                {
+                    <p class="book-detail-notes mb-0">@Model.Notes</p>
+                }
+            </div>
+        </article>
+
+        <section class="club-panel">
+            @{
+                var activeThread = Model.DiscussionThreads
+                    .First(thread => thread.Id == Model.ActiveThreadId);
+            }
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 class="h4 mb-0">Book discussion</h2>
+                @if (Model.IsAdmin)
+                {
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#new-thread-form"
+                        aria-expanded="false"
+                        aria-controls="new-thread-form">
+                        New Thread
+                    </button>
+                }
+            </div>
+
+            @if (Model.IsAdmin)
+            {
+                <div class="collapse" id="new-thread-form">
+                    <form
+                        asp-controller="ClubBooks"
+                        asp-action="CreateThread"
+                        asp-route-clubSlug="@Model.ClubSlug"
+                        asp-route-bookId="@Model.Id"
+                        method="post"
+                        class="compact-reply-form mb-3">
+                        <label asp-for="NewThread.Title" class="form-label"></label>
+                        <input
+                            asp-for="NewThread.Title"
+                            class="form-control form-control-sm mb-2"
+                            placeholder="Chapter 1" />
+                        <span asp-validation-for="NewThread.Title" class="text-danger"></span>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            Create Thread
+                        </button>
+                    </form>
+                </div>
+            }
+
+            <nav class="book-discussion-tabs mb-4" aria-label="Book discussion threads">
+                <div class="nav nav-tabs">
+                    @foreach (var thread in Model.DiscussionThreads)
+                    {
+                        <a
+                            asp-controller="ClubBooks"
+                            asp-action="Details"
+                            asp-route-clubSlug="@Model.ClubSlug"
+                            asp-route-bookId="@Model.Id"
+                            asp-route-thread="@thread.Id"
+                            class="nav-link @(thread.Id == Model.ActiveThreadId ? "active" : null)"
+                            aria-current="@(thread.Id == Model.ActiveThreadId ? "page" : null)">
+                            @thread.Title
+                        </a>
+                    }
+                </div>
+            </nav>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <h3 class="h5 mb-0">@activeThread.Title</h3>
+                @if (activeThread.CanDelete)
+                {
+                    <form
+                        asp-controller="ClubBooks"
+                        asp-action="DeleteThread"
+                        asp-route-clubSlug="@Model.ClubSlug"
+                        asp-route-bookId="@Model.Id"
+                        asp-route-threadId="@activeThread.Id"
+                        method="post">
+                        <button
+                            type="submit"
+                            class="icon-action icon-action-danger"
+                            title="Delete thread"
+                            aria-label="Delete @activeThread.Title thread"
+                            onclick="return confirm('Delete this thread and all of its posts?');">
+                            &#128465;
+                        </button>
+                    </form>
+                }
+            </div>
+
+            @if (activeThread.Posts.Count == 0)
+            {
+                <p class="text-muted">No posts in this thread yet.</p>
+            }
+            else
+            {
+                <partial
+                    name="_DiscussionThread"
+                    model="@(new DiscussionThreadViewModel { ClubSlug = Model.ClubSlug, Posts = activeThread.Posts })" />
+            }
+
+            @if (Model.CanPost)
+            {
+                <form
+                    asp-controller="ClubBooks"
+                    asp-action="AddDiscussion"
+                    asp-route-clubSlug="@Model.ClubSlug"
+                    asp-route-bookId="@Model.Id"
+                    asp-route-threadId="@Model.ActiveThreadId"
+                    method="post">
+                    <div class="mb-2">
+                        <label asp-for="NewDiscussion.Body" class="form-label"></label>
+                        <textarea
+                            asp-for="NewDiscussion.Body"
+                            class="form-control"
+                            rows="4"
+                            placeholder="Write a post in @activeThread.Title.">
+                        </textarea>
+                        <span asp-validation-for="NewDiscussion.Body" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        Post Message
+                    </button>
+                </form>
+            }
+            else if (Model.IsAuthenticated)
+            {
+                <p class="text-muted mb-0">
+                    <a
+                        asp-controller="BookClubs"
+                        asp-action="Details"
+                        asp-route-slug="@Model.ClubSlug">
+                        Join the club
+                    </a>
+                    to post in this discussion.
+                </p>
+            }
+            else
+            {
+                <p class="text-muted mb-0">
+                    <a
+                        asp-area="Identity"
+                        asp-page="/Account/Login"
+                        asp-route-returnUrl="@Context.Request.Path">
+                        Log in
+                    </a>
+                    and join the club to post in this discussion.
+                </p>
+            }
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

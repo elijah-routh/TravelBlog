@@ -74,7 +74,7 @@ public class PostsController : Controller
 
         if (post.IsPublished)
         {
-            return View(post);
+            return View(await BuildPostDetailsViewModelAsync(post));
         }
 
         if (User.Identity?.IsAuthenticated != true)
@@ -89,8 +89,212 @@ public class PostsController : Controller
                 PolicyNames.PostOwnerOrAdmin);
 
         return authorizationResult.Succeeded
-            ? View(post)
+            ? View(await BuildPostDetailsViewModelAsync(post))
             : Forbid();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddComment(
+        string slug,
+        [Bind(Prefix = "NewComment")] AddPostCommentViewModel model)
+    {
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Challenge();
+        }
+
+        var post = await FindVisiblePostAsync(slug);
+        if (post is null)
+        {
+            return NotFound();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(nameof(Details), await BuildPostDetailsViewModelAsync(post, model));
+        }
+
+        _context.PostComments.Add(new PostComment
+        {
+            PostId = post.Id,
+            AuthorId = userId,
+            Body = model.Body.Trim(),
+            CreatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Comment posted.";
+        return RedirectToAction(nameof(Details), new { slug = post.Slug });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReplyComment(
+        int id,
+        AddPostCommentViewModel model)
+    {
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Challenge();
+        }
+
+        var parent = await _context.PostComments
+            .AsNoTracking()
+            .Include(comment => comment.Post)
+            .FirstOrDefaultAsync(comment => comment.Id == id);
+        if (parent is null)
+        {
+            return NotFound();
+        }
+
+        if (!parent.Post.IsPublished)
+        {
+            var authorizationResult =
+                await _authorizationService.AuthorizeAsync(
+                    User,
+                    parent.Post,
+                    PolicyNames.PostOwnerOrAdmin);
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
+            }
+        }
+
+        if (parent.ParentId is not null)
+        {
+            return BadRequest();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            TempData["ErrorMessage"] = "A reply is required.";
+            return RedirectToAction(
+                nameof(Details),
+                new { slug = parent.Post.Slug });
+        }
+
+        _context.PostComments.Add(new PostComment
+        {
+            PostId = parent.PostId,
+            ParentId = parent.Id,
+            AuthorId = userId,
+            Body = model.Body.Trim(),
+            CreatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Reply posted.";
+        return RedirectToAction(
+            nameof(Details),
+            new { slug = parent.Post.Slug });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditComment(int id)
+    {
+        var comment = await _context.PostComments
+            .AsNoTracking()
+            .Include(existing => existing.Post)
+            .FirstOrDefaultAsync(existing => existing.Id == id);
+        if (comment is null)
+        {
+            return NotFound();
+        }
+
+        if (!CanManageComment(comment))
+        {
+            return Forbid();
+        }
+
+        return View(new EditPostCommentViewModel
+        {
+            Id = comment.Id,
+            PostSlug = comment.Post.Slug,
+            Body = comment.Body
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditComment(
+        int id,
+        EditPostCommentViewModel model)
+    {
+        var comment = await _context.PostComments
+            .Include(existing => existing.Post)
+            .FirstOrDefaultAsync(existing => existing.Id == id);
+        if (comment is null)
+        {
+            return NotFound();
+        }
+
+        if (!CanManageComment(comment))
+        {
+            return Forbid();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            model.Id = id;
+            model.PostSlug = comment.Post.Slug;
+            return View(model);
+        }
+
+        comment.Body = model.Body.Trim();
+        comment.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Comment updated.";
+        return RedirectToAction(nameof(Details), new { slug = comment.Post.Slug });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DeleteComment(int id)
+    {
+        var comment = await _context.PostComments
+            .AsNoTracking()
+            .Include(existing => existing.Author)
+            .Include(existing => existing.Post)
+            .FirstOrDefaultAsync(existing => existing.Id == id);
+        if (comment is null)
+        {
+            return NotFound();
+        }
+
+        if (!CanManageComment(comment))
+        {
+            return Forbid();
+        }
+
+        return View(comment);
+    }
+
+    [HttpPost, ActionName("DeleteComment")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCommentConfirmed(int id)
+    {
+        var comment = await _context.PostComments
+            .Include(existing => existing.Post)
+            .FirstOrDefaultAsync(existing => existing.Id == id);
+        if (comment is null)
+        {
+            return NotFound();
+        }
+
+        if (!CanManageComment(comment))
+        {
+            return Forbid();
+        }
+
+        var slug = comment.Post.Slug;
+        _context.PostComments.Remove(comment);
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Comment deleted.";
+        return RedirectToAction(nameof(Details), new { slug });
     }
 
     // GET: /Posts/Create
@@ -469,5 +673,64 @@ public class PostsController : Controller
                 objectKey,
                 operation);
         }
+    }
+
+    private async Task<Post?> FindVisiblePostAsync(string slug)
+    {
+        var post = await _context.Posts
+            .AsNoTracking()
+            .Include(existing => existing.Author)
+            .FirstOrDefaultAsync(existing => existing.Slug == slug);
+        if (post is null)
+        {
+            return null;
+        }
+
+        if (post.IsPublished)
+        {
+            return post;
+        }
+
+        var authorizationResult = await _authorizationService.AuthorizeAsync(
+            User,
+            post,
+            PolicyNames.PostOwnerOrAdmin);
+        return authorizationResult.Succeeded ? post : null;
+    }
+
+    private async Task<PostDetailsViewModel> BuildPostDetailsViewModelAsync(
+        Post post,
+        AddPostCommentViewModel? newComment = null)
+    {
+        var userId = _userManager.GetUserId(User);
+        var isAdmin = User.IsInRole(RoleNames.Admin);
+        var comments = await _context.PostComments
+            .AsNoTracking()
+            .Include(comment => comment.Author)
+            .Where(comment => comment.PostId == post.Id)
+            .OrderBy(comment => comment.CreatedAt)
+            .ToListAsync();
+
+        return new PostDetailsViewModel
+        {
+            Post = post,
+            CanComment = User.Identity?.IsAuthenticated == true,
+            IsAuthenticated = User.Identity?.IsAuthenticated == true,
+            NewComment = newComment ?? new AddPostCommentViewModel(),
+            Comments = PostCommentThreadMapper.Build(
+                comments,
+                userId,
+                isAdmin,
+                canReply: User.Identity?.IsAuthenticated == true)
+        };
+    }
+
+    private bool CanManageComment(PostComment comment)
+    {
+        var userId = _userManager.GetUserId(User);
+        return OwnerAccess.IsAdminOrOwner(
+            User.IsInRole(RoleNames.Admin),
+            userId,
+            comment.AuthorId);
     }
 }

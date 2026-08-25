@@ -23,32 +23,32 @@ public class HomeController : Controller
     {
         const int postsPerCategory = 8;
 
-        var parodyEditorials = await _context.Posts
+        var literatureAndStuff = await _context.Posts
             .AsNoTracking()
             .Include(post => post.Author)
             .Where(post =>
                 post.IsPublished &&
-                post.Category == PostCategory.ParodyEditorial)
+                post.Category == PostCategory.LiteratureAndStuff)
             .OrderByDescending(post => post.CreatedAt)
             .Take(postsPerCategory)
             .ToListAsync();
 
-        var shortStories = await _context.Posts
+        var fictionAndSatire = await _context.Posts
             .AsNoTracking()
             .Include(post => post.Author)
             .Where(post =>
                 post.IsPublished &&
-                post.Category == PostCategory.ShortStory)
+                post.Category == PostCategory.FictionAndSatire)
             .OrderByDescending(post => post.CreatedAt)
             .Take(postsPerCategory)
             .ToListAsync();
 
-        var realNews = await _context.Posts
+        var other = await _context.Posts
             .AsNoTracking()
             .Include(post => post.Author)
             .Where(post =>
                 post.IsPublished &&
-                post.Category == PostCategory.RealNews)
+                post.Category == PostCategory.Other)
             .OrderByDescending(post => post.CreatedAt)
             .Take(postsPerCategory)
             .ToListAsync();
@@ -59,21 +59,21 @@ public class HomeController : Controller
             [
                 new EditorialCategoryViewModel
                 {
-                    Name = "Parody Editorial",
-                    Slug = "parody-editorial",
-                    Posts = parodyEditorials
+                    Name = "Literature and Stuff",
+                    Slug = "literature-and-stuff",
+                    Posts = literatureAndStuff
                 },
                 new EditorialCategoryViewModel
                 {
-                    Name = "Short Stories",
-                    Slug = "short-stories",
-                    Posts = shortStories
+                    Name = "Fiction and Satire",
+                    Slug = "fiction-and-satire",
+                    Posts = fictionAndSatire
                 },
                 new EditorialCategoryViewModel
                 {
-                    Name = "Real News",
-                    Slug = "real-news",
-                    Posts = realNews
+                    Name = "Other",
+                    Slug = "other",
+                    Posts = other
                 }
             ]
         };

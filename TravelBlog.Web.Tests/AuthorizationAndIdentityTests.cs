@@ -396,7 +396,7 @@ public sealed class AuthorizationAndIdentityTests
                 Title = $"{label}-{Guid.NewGuid():N}",
                 Slug = $"{label}-{Guid.NewGuid():N}",
                 Content = "Integration test content.",
-                Category = PostCategory.ParodyEditorial,
+                Category = PostCategory.LiteratureAndStuff,
                 IsPublished = isPublished,
                 CreatedAt = DateTime.UtcNow
             };

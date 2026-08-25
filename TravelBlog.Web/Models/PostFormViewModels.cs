@@ -38,7 +38,7 @@ public abstract class PostFormViewModel
         ErrorMessage = "Select a valid category.")]
     [Display(Name = "Category")]
     public PostCategory Category { get; set; } =
-        PostCategory.ParodyEditorial;
+        PostCategory.LiteratureAndStuff;
 
     [Display(Name = "Published")]
     public bool IsPublished { get; set; }

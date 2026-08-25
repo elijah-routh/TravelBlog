@@ -1,0 +1,33 @@
+@model BookClubFormViewModel
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label"></label>
+    <input
+        asp-for="Name"
+        class="form-control"
+        placeholder="Giant Lampoon Readers" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Slug" class="form-label"></label>
+    <input
+        asp-for="Slug"
+        class="form-control"
+        placeholder="giant-lampoon-readers" />
+    <div class="form-text">
+        Use lowercase letters, numbers, and hyphens.
+    </div>
+    <span asp-validation-for="Slug" class="text-danger"></span>
+</div>
+
+<div class="mb-4">
+    <label asp-for="Description" class="form-label"></label>
+    <textarea
+        asp-for="Description"
+        class="form-control"
+        rows="4"
+        placeholder="What this club reads and discusses.">
+    </textarea>
+    <span asp-validation-for="Description" class="text-danger"></span>
+</div>

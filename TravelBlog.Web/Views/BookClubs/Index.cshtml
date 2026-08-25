@@ -1,0 +1,117 @@
+@model BookClubIndexViewModel
+
+@{
+    ViewData["Title"] = "Book Clubs";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+                <h1 class="mb-1">Book Clubs</h1>
+                <p class="text-muted mb-0">
+                    Join a club, follow the reading timeline, and take part in the discussion.
+                </p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a
+                    asp-controller="BookClubs"
+                    asp-action="Timeline"
+                    class="btn btn-outline-primary">
+                    Combined Timeline
+                </a>
+                @if (Model.IsAdmin)
+                {
+                    <a
+                        asp-controller="BookClubs"
+                        asp-action="Create"
+                        class="btn btn-primary">
+                        Create Club
+                    </a>
+                }
+            </div>
+        </div>
+
+        @if (TempData["StatusMessage"] is string status)
+        {
+            <div class="alert alert-success">@status</div>
+        }
+
+        @if (Model.Clubs.Count == 0)
+        {
+            <div class="alert alert-info mb-0">
+                No book clubs have been created yet.
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var club in Model.Clubs)
+                {
+                    <div class="col-sm-12 col-md-6 col-lg-4">
+                        <article class="card travel-card">
+                            <div class="card-body d-flex flex-column">
+                                <h2 class="card-title h4">@club.Name</h2>
+
+                                @if (!string.IsNullOrWhiteSpace(club.Description))
+                                {
+                                    <p class="card-text">@club.Description</p>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(club.CurrentBookTitle))
+                                {
+                                    <div class="book-club-current mb-3">
+                                        @if (!string.IsNullOrWhiteSpace(club.CurrentBookImagePath))
+                                        {
+                                            <img
+                                                src="@club.CurrentBookImagePath"
+                                                class="book-club-current-cover"
+                                                alt="Cover of @club.CurrentBookTitle" />
+                                        }
+                                        else
+                                        {
+                                            <div class="book-club-current-cover book-cover-placeholder">
+                                                No cover
+                                            </div>
+                                        }
+                                        <div>
+                                            <p class="text-uppercase small text-muted mb-1">
+                                                Current book
+                                            </p>
+                                            <p class="mb-1">
+                                                <strong>@club.CurrentBookTitle</strong>
+                                            </p>
+                                            <p class="small text-muted mb-0">
+                                                @club.CurrentBookDate?.ToString("MMMM d, yyyy")
+                                            </p>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="small text-muted mb-3">
+                                        No upcoming book is scheduled.
+                                    </p>
+                                }
+
+                                <p class="small text-muted mb-3">
+                                    @club.MemberCount
+                                    @(club.MemberCount == 1 ? "member" : "members")
+                                </p>
+
+                                <a
+                                    asp-controller="BookClubs"
+                                    asp-action="Details"
+                                    asp-route-slug="@club.Slug"
+                                    class="btn btn-outline-primary mt-auto">
+                                    View Club
+                                </a>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>

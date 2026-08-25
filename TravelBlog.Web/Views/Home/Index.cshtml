@@ -1,7 +1,4 @@
-﻿@using Microsoft.AspNetCore.Identity
-@using TravelBlog.Web.Authorization
-@model TravelBlog.Web.Models.HomeIndexViewModel
-@inject UserManager<ApplicationUser> UserManager
+﻿@model TravelBlog.Web.Models.HomeIndexViewModel
 
 @{
     ViewData["Title"] = "Home";
@@ -11,18 +8,18 @@
 <header class="hero">
     <div class="hero-content">
         <p class="text-uppercase mb-2">
-            Satire, fiction, and reporting
+            Literature, fiction, and satire
         </p>
 
         <h1>Giant Lampoon</h1>
 
         <p>
-            An independent publication for parody editorials,
-            original short stories, and real news.
+            An independent publication for literature and stuff,
+            fiction and satire, and everything else.
         </p>
 
         <a
-            href="#parody-editorial"
+            href="#literature-and-stuff"
             class="btn btn-primary btn-lg">
             Read the Latest
         </a>
@@ -108,12 +105,6 @@
                                     class="btn btn-outline-primary mt-auto">
                                     Read Post
                                 </a>
-                                @if (User.Identity?.IsAuthenticated == true &&
-                                    (User.IsInRole(RoleNames.Admin) ||
-                                     post.AuthorId == UserManager.GetUserId(User)))
-                                {
-                                    <a asp-controller="Posts" asp-action="Edit" asp-route-id="@post.Id" class="btn btn-sm btn-link mt-2">Edit</a>
-                                }
                             </div>
                         </article>
                     }
@@ -148,17 +139,17 @@
                 <h2>About Giant Lampoon</h2>
 
                 <p>
-                    Giant Lampoon collects parody editorials,
-                    original short fiction, and real reporting.
+                    Giant Lampoon collects literature and stuff,
+                    fiction and satire, and other writing.
                 </p>
 
                 <p>
                     Each section offers a different kind of story,
-                    from satire to fiction to current events.
+                    from literature to fiction and satire to everything else.
                 </p>
 
                 <a
-                    href="#parody-editorial"
+                    href="#literature-and-stuff"
                     class="btn btn-dark">
                     Browse the Archive
                 </a>
@@ -177,7 +168,7 @@
                     <h2>Follow Giant Lampoon</h2>
 
                     <p>
-                        Get new editorials, stories, and news posts
+                        Get new literature, fiction, satire, and other posts
                         from Giant Lampoon as they are published.
                     </p>
 

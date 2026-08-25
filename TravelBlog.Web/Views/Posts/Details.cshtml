@@ -1,10 +1,10 @@
 @using Microsoft.AspNetCore.Identity
 @using TravelBlog.Web.Authorization
-@model TravelBlog.Web.Models.Post
+@model PostDetailsViewModel
 @inject UserManager<ApplicationUser> UserManager
 
 @{
-    ViewData["Title"] = Model.Title;
+    ViewData["Title"] = Model.Post.Title;
 }
 
 <article class="content-section">
@@ -14,10 +14,10 @@
 
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     <span class="badge text-bg-primary">
-                        @Html.DisplayFor(model => model.Category)
+                        @Html.DisplayFor(model => model.Post.Category)
                     </span>
 
-                    @if (Model.IsPublished)
+                    @if (Model.Post.IsPublished)
                     {
                         <span class="badge text-bg-success">
                             Published
@@ -32,38 +32,38 @@
                 </div>
 
                 <h1 class="display-4 fw-bold">
-                    @Model.Title
+                    @Model.Post.Title
                 </h1>
 
                 <p class="text-muted">
-                    By @Model.Author.DisplayName ·
-                    @Model.CreatedAt
+                    By @Model.Post.Author.DisplayName ·
+                    @Model.Post.CreatedAt
                         .ToLocalTime()
                         .ToString("MMMM d, yyyy")
                 </p>
 
-                @if (!string.IsNullOrWhiteSpace(Model.ImagePath))
+                @if (!string.IsNullOrWhiteSpace(Model.Post.ImagePath))
                 {
                     <img
-                        src="@Url.Content(Model.ImagePath)"
+                        src="@Url.Content(Model.Post.ImagePath)"
                         class="img-fluid rounded w-100 mb-4 post-detail-image"
-                        alt="@Model.Title" />
+                        alt="@Model.Post.Title" />
                 }
 
-                @if (!string.IsNullOrWhiteSpace(Model.Summary))
+                @if (!string.IsNullOrWhiteSpace(Model.Post.Summary))
                 {
                     <p class="lead">
-                        @Model.Summary
+                        @Model.Post.Summary
                     </p>
                 }
 
                 <div class="post-content">
-                    @Model.Content
+                    @Model.Post.Content
                 </div>
 
                 <hr class="my-5" />
 
-                <div class="d-flex flex-wrap gap-2">
+                <div class="d-flex flex-wrap gap-2 mb-5">
                     <a
                         asp-controller="Posts"
                         asp-action="Index"
@@ -73,13 +73,93 @@
 
                     @if (User.Identity?.IsAuthenticated == true &&
                         (User.IsInRole(RoleNames.Admin) ||
-                         Model.AuthorId == UserManager.GetUserId(User)))
+                         Model.Post.AuthorId == UserManager.GetUserId(User)))
                     {
-                        <a asp-controller="Posts" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">Edit</a>
-                        <a asp-controller="Posts" asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">Delete</a>
+                        <a
+                            asp-controller="Posts"
+                            asp-action="Edit"
+                            asp-route-id="@Model.Post.Id"
+                            class="icon-action"
+                            title="Edit post"
+                            aria-label="Edit post">&#9998;</a>
+                        <a
+                            asp-controller="Posts"
+                            asp-action="Delete"
+                            asp-route-id="@Model.Post.Id"
+                            class="icon-action icon-action-danger"
+                            title="Delete post"
+                            aria-label="Delete post">&#128465;</a>
                     }
                 </div>
+
+                <section class="club-panel">
+                    <h2 class="h4 mb-3">Comments</h2>
+
+                    @if (TempData["StatusMessage"] is string status)
+                    {
+                        <div class="alert alert-success">@status</div>
+                    }
+                    @if (TempData["ErrorMessage"] is string error)
+                    {
+                        <div class="alert alert-danger">@error</div>
+                    }
+
+                    @if (Model.Comments.Count == 0)
+                    {
+                        <p class="text-muted">No comments yet.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled club-discussion-list">
+                            @foreach (var comment in Model.Comments)
+                            {
+                                <li class="club-discussion-post">
+                                    <partial name="_PostComment" model="comment" />
+                                </li>
+                            }
+                        </ul>
+                    }
+
+                    @if (Model.CanComment)
+                    {
+                        <form
+                            asp-controller="Posts"
+                            asp-action="AddComment"
+                            asp-route-slug="@Model.Post.Slug"
+                            method="post">
+                            <div class="mb-2">
+                                <label asp-for="NewComment.Body" class="form-label"></label>
+                                <textarea
+                                    asp-for="NewComment.Body"
+                                    class="form-control"
+                                    rows="4"
+                                    placeholder="Share a comment.">
+                                </textarea>
+                                <span asp-validation-for="NewComment.Body" class="text-danger"></span>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                Post Comment
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">
+                            <a
+                                asp-area="Identity"
+                                asp-page="/Account/Login"
+                                asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+                                Log in
+                            </a>
+                            to comment on this post.
+                        </p>
+                    }
+                </section>
             </div>
         </div>
     </div>
 </article>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

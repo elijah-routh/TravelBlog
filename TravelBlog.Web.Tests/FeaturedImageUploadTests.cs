@@ -348,7 +348,7 @@ public sealed class FeaturedImageUploadTests
                 Content = "Featured image integration test.",
                 ImagePath = imagePath,
                 ImageObjectKey = imageObjectKey,
-                Category = PostCategory.ParodyEditorial,
+                Category = PostCategory.LiteratureAndStuff,
                 IsPublished = true,
                 CreatedAt = DateTime.UtcNow
             };

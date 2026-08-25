@@ -1,0 +1,149 @@
+@model BookClubDetailsViewModel
+
+<section class="club-panel">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="h4 mb-0">
+            @(Model.ShowTimeline ? "Reading timeline" : "Current book")
+        </h2>
+        @if (Model.ShowTimeline)
+        {
+            <a
+                asp-controller="BookClubs"
+                asp-action="Details"
+                asp-route-slug="@Model.Slug"
+                class="btn btn-sm btn-outline-primary">
+                Show Current Book
+            </a>
+        }
+        else
+        {
+            <a
+                asp-controller="BookClubs"
+                asp-action="Details"
+                asp-route-slug="@Model.Slug"
+                asp-route-view="timeline"
+                class="btn btn-sm btn-outline-primary">
+                View Full Timeline
+            </a>
+        }
+    </div>
+
+    @if (Model.ShowTimeline)
+    {
+        @if (Model.Books.Count == 0)
+        {
+            <p class="text-muted mb-0">
+                No books have been added to this club yet.
+            </p>
+        }
+        else
+        {
+            <ol class="club-timeline">
+                @foreach (var book in Model.Books)
+                {
+                    <li class="club-timeline-item">
+                        <div class="book-timeline-content">
+                            @if (!string.IsNullOrWhiteSpace(book.ImagePath))
+                            {
+                                <img
+                                    src="@book.ImagePath"
+                                    class="book-timeline-cover"
+                                    alt="Cover of @book.Title" />
+                            }
+                            <div>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <span class="badge timeline-status-badge @(book.Status == ClubBookTimeline.Current ? "timeline-status-current" : book.Status == ClubBookTimeline.Upcoming ? "timeline-status-upcoming" : "timeline-status-past")">
+                                        @book.Status
+                                    </span>
+                                    <time class="small text-muted">
+                                        @book.ReadingDate.ToString("MMMM d, yyyy")
+                                    </time>
+                                </div>
+                                <h3 class="h5 mb-1">
+                                    <a
+                                        asp-controller="ClubBooks"
+                                        asp-action="Details"
+                                        asp-route-clubSlug="@Model.Slug"
+                                        asp-route-bookId="@book.Id">
+                                        @book.Title
+                                    </a>
+                                </h3>
+                                <p class="mb-1">@book.AuthorName</p>
+                                @if (!string.IsNullOrWhiteSpace(book.Notes))
+                                {
+                                    <p class="small text-muted mb-2">@book.Notes</p>
+                                }
+                                @if (Model.IsAdmin)
+                                {
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a
+                                            asp-controller="ClubBooks"
+                                            asp-action="Edit"
+                                            asp-route-clubSlug="@Model.Slug"
+                                            asp-route-bookId="@book.Id"
+                                            class="icon-action"
+                                            title="Edit book"
+                                            aria-label="Edit @book.Title">&#9998;</a>
+                                        <a
+                                            asp-controller="ClubBooks"
+                                            asp-action="Delete"
+                                            asp-route-clubSlug="@Model.Slug"
+                                            asp-route-bookId="@book.Id"
+                                            class="icon-action icon-action-danger"
+                                            title="Delete book"
+                                            aria-label="Delete @book.Title">&#128465;</a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ol>
+        }
+    }
+    else if (Model.CurrentBook is null)
+    {
+        <p class="text-muted mb-0">
+            No upcoming book is scheduled.
+        </p>
+    }
+    else
+    {
+        var book = Model.CurrentBook;
+        <article class="current-book-card">
+            @if (!string.IsNullOrWhiteSpace(book.ImagePath))
+            {
+                <img
+                    src="@book.ImagePath"
+                    class="current-book-cover"
+                    alt="Cover of @book.Title" />
+            }
+            else
+            {
+                <div class="current-book-cover book-cover-placeholder">
+                    No cover yet
+                </div>
+            }
+            <div class="current-book-details">
+                <p class="text-uppercase small text-muted mb-1">Next on the timeline</p>
+                <h3 class="h2 mb-1">
+                    <a
+                        asp-controller="ClubBooks"
+                        asp-action="Details"
+                        asp-route-clubSlug="@Model.Slug"
+                        asp-route-bookId="@book.Id">
+                        @book.Title
+                    </a>
+                </h3>
+                <p class="lead mb-2">@book.AuthorName</p>
+                <p class="fw-semibold mb-3">
+                    @book.ReadingDate.ToString("MMMM d, yyyy")
+                </p>
+                @if (!string.IsNullOrWhiteSpace(book.Notes))
+                {
+                    <p class="text-muted mb-0">@book.Notes</p>
+                }
+            </div>
+        </article>
+    }
+</section>
