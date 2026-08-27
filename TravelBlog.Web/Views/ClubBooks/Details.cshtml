@@ -46,7 +46,9 @@
                             @Model.Status
                         </span>
                         <time class="small text-muted">
-                            @Model.ReadingDate.ToString("MMMM d, yyyy")
+                            @Model.StartDate.ToString("MMM d, yyyy")
+                            –
+                            @Model.EndDate.ToString("MMM d, yyyy")
                         </time>
                     </div>
 
@@ -94,18 +96,54 @@
             }
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <h2 class="h4 mb-0">Book discussion</h2>
-                @if (Model.IsAdmin)
-                {
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-primary"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#new-thread-form"
-                        aria-expanded="false"
-                        aria-controls="new-thread-form">
-                        New Thread
-                    </button>
-                }
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Discussion order">
+                        <a
+                            asp-controller="ClubBooks"
+                            asp-action="Details"
+                            asp-route-clubSlug="@Model.ClubSlug"
+                            asp-route-bookId="@Model.Id"
+                            asp-route-thread="@Model.ActiveThreadId"
+                            asp-route-sort="@DiscussionSortOrder.Oldest"
+                            class="btn @(Model.DiscussionSort == DiscussionSortOrder.Oldest ? "btn-secondary" : "btn-outline-secondary")">
+                            Oldest
+                        </a>
+                        <a
+                            asp-controller="ClubBooks"
+                            asp-action="Details"
+                            asp-route-clubSlug="@Model.ClubSlug"
+                            asp-route-bookId="@Model.Id"
+                            asp-route-thread="@Model.ActiveThreadId"
+                            asp-route-sort="@DiscussionSortOrder.Newest"
+                            class="btn @(Model.DiscussionSort == DiscussionSortOrder.Newest ? "btn-secondary" : "btn-outline-secondary")">
+                            Newest
+                        </a>
+                    </div>
+                    @if (Model.IsAdmin)
+                    {
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#new-thread-form"
+                            aria-expanded="false"
+                            aria-controls="new-thread-form">
+                            New Thread
+                        </button>
+                    }
+                    @if (Model.CanPost)
+                    {
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#new-book-poll"
+                            aria-expanded="false"
+                            aria-controls="new-book-poll">
+                            New Poll
+                        </button>
+                    }
+                </div>
             </div>
 
             @if (Model.IsAdmin)
@@ -131,6 +169,42 @@
                 </div>
             }
 
+            @if (Model.CanPost)
+            {
+                <div class="collapse mb-3" id="new-book-poll">
+                    <form
+                        asp-controller="DiscussionPolls"
+                        asp-action="Create"
+                        asp-route-slug="@Model.ClubSlug"
+                        asp-route-bookId="@Model.Id"
+                        asp-route-threadId="@Model.ActiveThreadId"
+                        asp-route-sort="@Model.DiscussionSort"
+                        method="post"
+                        class="compact-reply-form discussion-poll-form">
+                        <label class="form-label" for="book-poll-title">Poll title</label>
+                        <input
+                            id="book-poll-title"
+                            name="Title"
+                            class="form-control mb-2"
+                            maxlength="200"
+                            required />
+                        <div class="poll-options">
+                            <label class="form-label">Options</label>
+                            <input name="Options[0]" class="form-control mb-2" maxlength="200" required />
+                            <input name="Options[1]" class="form-control mb-2" maxlength="200" required />
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary poll-add-option">
+                                Add Option
+                            </button>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                Create Poll
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            }
+
             <nav class="book-discussion-tabs mb-4" aria-label="Book discussion threads">
                 <div class="nav nav-tabs">
                     @foreach (var thread in Model.DiscussionThreads)
@@ -141,6 +215,7 @@
                             asp-route-clubSlug="@Model.ClubSlug"
                             asp-route-bookId="@Model.Id"
                             asp-route-thread="@thread.Id"
+                            asp-route-sort="@Model.DiscussionSort"
                             class="nav-link @(thread.Id == Model.ActiveThreadId ? "active" : null)"
                             aria-current="@(thread.Id == Model.ActiveThreadId ? "page" : null)">
                             @thread.Title
@@ -191,6 +266,7 @@
                     asp-route-clubSlug="@Model.ClubSlug"
                     asp-route-bookId="@Model.Id"
                     asp-route-threadId="@Model.ActiveThreadId"
+                    asp-route-sort="@Model.DiscussionSort"
                     method="post">
                     <div class="mb-2">
                         <label asp-for="NewDiscussion.Body" class="form-label"></label>
@@ -237,4 +313,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <partial name="_PollScripts" />
 }

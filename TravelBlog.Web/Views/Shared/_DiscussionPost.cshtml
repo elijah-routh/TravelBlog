@@ -1,7 +1,21 @@
 @model DiscussionPostItemViewModel
 
-<p class="fw-semibold mb-1">@Model.AuthorDisplayName</p>
-<p class="club-discussion-body mb-1">@Model.Body</p>
+<p class="fw-semibold mb-1">
+    @Model.AuthorDisplayName
+    @if (Model.IsPinned)
+    {
+        <span class="discussion-pinned-label">Pinned</span>
+    }
+</p>
+@if (Model.Poll is null)
+{
+    <p class="club-discussion-body mb-1">@Model.Body</p>
+}
+else
+{
+    <h3 class="h5 mb-3">@Model.Body</h3>
+    <partial name="_DiscussionPoll" model="Model.Poll" />
+}
 <p class="small text-muted mb-2">
     @Model.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy h:mm tt")
     @if (Model.UpdatedAt is not null)
@@ -10,7 +24,7 @@
     }
 </p>
 
-@if (Model.CanEdit || Model.CanDelete || Model.CanReply)
+@if (Model.CanEdit || Model.CanDelete || Model.CanReply || Model.CanPin)
 {
     <div class="comment-actions mb-2">
         @if (Model.CanEdit)
@@ -39,6 +53,37 @@
                 &#128465;
             </a>
         }
+        @if (Model.CanPin)
+        {
+            <form
+                asp-controller="DiscussionPosts"
+                asp-action="TogglePin"
+                asp-route-slug="@Model.ClubSlug"
+                asp-route-id="@Model.Id"
+                asp-route-sort="@(Context.Request.Query["sort"].ToString())"
+                method="post">
+                <button
+                    type="submit"
+                    class="icon-action @(Model.IsPinned ? "discussion-pin-active" : null)"
+                    title="@(Model.IsPinned ? "Unpin message" : "Pin message")"
+                    aria-label="@(Model.IsPinned ? "Unpin message" : "Pin message")">
+                    <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M12 17v5" />
+                        <path d="M5 17h14" />
+                        <path d="M6 3h12l-2 7 3 3H5l3-3-2-7z" />
+                    </svg>
+                </button>
+            </form>
+        }
         @if (Model.CanReply)
         {
             <button
@@ -62,6 +107,7 @@
             asp-action="Reply"
             asp-route-slug="@Model.ClubSlug"
             asp-route-id="@Model.Id"
+            asp-route-sort="@(Context.Request.Query["sort"].ToString())"
             method="post"
             class="compact-reply-form mb-3">
             <label class="form-label visually-hidden" for="reply-@Model.Id">

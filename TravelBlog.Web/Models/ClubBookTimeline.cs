@@ -17,8 +17,8 @@ public static class ClubBookTimeline
 
         var today = utcNow.Date;
         return books
-            .Where(book => book.ReadingDate.Date >= today)
-            .OrderBy(book => book.ReadingDate)
+            .Where(book => book.EndDate.Date >= today)
+            .OrderBy(book => book.EndDate)
             .ThenBy(book => book.Id)
             .FirstOrDefault();
     }
@@ -33,7 +33,7 @@ public static class ClubBookTimeline
             return Current;
         }
 
-        if (book.ReadingDate.Date >= utcNow.Date)
+        if (book.EndDate.Date >= utcNow.Date)
         {
             return Upcoming;
         }

@@ -28,11 +28,15 @@ public class DiscussionPost
 
     public DateTime? UpdatedAt { get; set; }
 
+    public bool IsPinned { get; set; }
+
     public int? ParentId { get; set; }
 
     public DiscussionPost? Parent { get; set; }
 
     public ICollection<DiscussionPost> Replies { get; set; } = [];
+
+    public DiscussionPoll? Poll { get; set; }
 
     [Required]
     public string AuthorId { get; set; } = string.Empty;

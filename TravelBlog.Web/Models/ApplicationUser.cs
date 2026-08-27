@@ -19,5 +19,7 @@ public class ApplicationUser : IdentityUser
 
     public ICollection<DiscussionPost> DiscussionPosts { get; set; } = [];
 
+    public ICollection<DiscussionPollVote> DiscussionPollVotes { get; set; } = [];
+
     public ICollection<PostComment> PostComments { get; set; } = [];
 }

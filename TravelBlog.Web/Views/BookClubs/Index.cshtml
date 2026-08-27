@@ -83,7 +83,9 @@
                                                 <strong>@club.CurrentBookTitle</strong>
                                             </p>
                                             <p class="small text-muted mb-0">
-                                                @club.CurrentBookDate?.ToString("MMMM d, yyyy")
+                                                @club.CurrentBookStartDate?.ToString("MMM d, yyyy")
+                                                –
+                                                @club.CurrentBookEndDate?.ToString("MMM d, yyyy")
                                             </p>
                                         </div>
                                     </div>

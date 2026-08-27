@@ -28,7 +28,7 @@ public class BookClubFormViewModel
     public string? Description { get; set; }
 }
 
-public class AddClubBookViewModel
+public class AddClubBookViewModel : IValidatableObject
 {
     [Required(ErrorMessage = "A title is required.")]
     [StringLength(
@@ -53,10 +53,26 @@ public class AddClubBookViewModel
 
     public string? CurrentImagePath { get; set; }
 
-    [Required(ErrorMessage = "A reading date is required.")]
+    [Required(ErrorMessage = "A start date is required.")]
     [DataType(DataType.Date)]
-    [Display(Name = "Reading date")]
-    public DateTime ReadingDate { get; set; } = DateTime.UtcNow.Date;
+    [Display(Name = "Start date")]
+    public DateTime StartDate { get; set; } = DateTime.UtcNow.Date;
+
+    [Required(ErrorMessage = "An end date is required.")]
+    [DataType(DataType.Date)]
+    [Display(Name = "End date")]
+    public DateTime EndDate { get; set; } = DateTime.UtcNow.Date;
+
+    public IEnumerable<ValidationResult> Validate(
+        ValidationContext validationContext)
+    {
+        if (EndDate.Date < StartDate.Date)
+        {
+            yield return new ValidationResult(
+                "The end date must be on or after the start date.",
+                [nameof(EndDate)]);
+        }
+    }
 }
 
 public class AddClubNoticeViewModel
@@ -77,6 +93,45 @@ public class AddDiscussionPostViewModel
         ErrorMessage = "The message cannot exceed 2000 characters.")]
     [Display(Name = "Message")]
     public string Body { get; set; } = string.Empty;
+}
+
+public class CreateDiscussionPollViewModel : IValidatableObject
+{
+    [Required(ErrorMessage = "A poll title is required.")]
+    [StringLength(
+        200,
+        ErrorMessage = "The poll title cannot exceed 200 characters.")]
+    public string Title { get; set; } = string.Empty;
+
+    public List<string> Options { get; set; } = ["", ""];
+
+    public IEnumerable<ValidationResult> Validate(
+        ValidationContext validationContext)
+    {
+        var options = Options
+            .Where(option => !string.IsNullOrWhiteSpace(option))
+            .Select(option => option.Trim())
+            .ToList();
+        if (options.Count < 2)
+        {
+            yield return new ValidationResult(
+                "Add at least two poll options.",
+                [nameof(Options)]);
+        }
+        if (options.Count > 10)
+        {
+            yield return new ValidationResult(
+                "A poll cannot have more than 10 options.",
+                [nameof(Options)]);
+        }
+        if (options.Distinct(StringComparer.OrdinalIgnoreCase).Count() !=
+            options.Count)
+        {
+            yield return new ValidationResult(
+                "Poll options must be unique.",
+                [nameof(Options)]);
+        }
+    }
 }
 
 public class CreateBookDiscussionThreadViewModel
@@ -105,7 +160,9 @@ public class BookClubListItemViewModel
 
     public string? CurrentBookImagePath { get; set; }
 
-    public DateTime? CurrentBookDate { get; set; }
+    public DateTime? CurrentBookStartDate { get; set; }
+
+    public DateTime? CurrentBookEndDate { get; set; }
 }
 
 public class BookClubIndexViewModel
@@ -131,7 +188,9 @@ public class CombinedBookTimelineItemViewModel
 
     public string? ImagePath { get; set; }
 
-    public DateTime ReadingDate { get; set; }
+    public DateTime StartDate { get; set; }
+
+    public DateTime EndDate { get; set; }
 
     public string Status { get; set; } = string.Empty;
 }
@@ -144,6 +203,8 @@ public class CombinedBookTimelineViewModel
 
 public class ClubNoticeItemViewModel
 {
+    public int Id { get; set; }
+
     public string AuthorDisplayName { get; set; } = string.Empty;
 
     public string Body { get; set; } = string.Empty;
@@ -171,7 +232,38 @@ public class DiscussionPostItemViewModel
 
     public bool CanReply { get; set; }
 
+    public bool CanPin { get; set; }
+
+    public bool IsPinned { get; set; }
+
+    public DiscussionPollItemViewModel? Poll { get; set; }
+
     public IReadOnlyList<DiscussionPostItemViewModel> Replies { get; set; } = [];
+}
+
+public class DiscussionPollItemViewModel
+{
+    public int Id { get; set; }
+
+    public string ClubSlug { get; set; } = string.Empty;
+
+    public int TotalVotes { get; set; }
+
+    public bool CanVote { get; set; }
+
+    public IReadOnlyList<DiscussionPollOptionItemViewModel> Options
+        { get; set; } = [];
+}
+
+public class DiscussionPollOptionItemViewModel
+{
+    public int Id { get; set; }
+
+    public string Text { get; set; } = string.Empty;
+
+    public bool IsSelectedByCurrentUser { get; set; }
+
+    public IReadOnlyList<string> VoterDisplayNames { get; set; } = [];
 }
 
 public class DiscussionThreadViewModel
@@ -209,7 +301,9 @@ public class ClubBookTimelineItemViewModel
 
     public string? ImagePath { get; set; }
 
-    public DateTime ReadingDate { get; set; }
+    public DateTime StartDate { get; set; }
+
+    public DateTime EndDate { get; set; }
 
     public string Status { get; set; } = string.Empty;
 }
@@ -234,6 +328,8 @@ public class BookClubDetailsViewModel
 
     public bool ShowTimeline { get; set; }
 
+    public string DiscussionSort { get; set; } = DiscussionSortOrder.Newest;
+
     public ClubBookTimelineItemViewModel? CurrentBook { get; set; }
 
     public IReadOnlyList<ClubNoticeItemViewModel> Notices { get; set; } = [];
@@ -246,6 +342,8 @@ public class BookClubDetailsViewModel
     public AddClubNoticeViewModel NewNotice { get; set; } = new();
 
     public AddDiscussionPostViewModel NewDiscussion { get; set; } = new();
+
+    public CreateDiscussionPollViewModel NewPoll { get; set; } = new();
 }
 
 public class ClubBookDetailsViewModel
@@ -264,7 +362,9 @@ public class ClubBookDetailsViewModel
 
     public string? ImagePath { get; set; }
 
-    public DateTime ReadingDate { get; set; }
+    public DateTime StartDate { get; set; }
+
+    public DateTime EndDate { get; set; }
 
     public string Status { get; set; } = string.Empty;
 
@@ -274,6 +374,8 @@ public class ClubBookDetailsViewModel
 
     public bool IsAuthenticated { get; set; }
 
+    public string DiscussionSort { get; set; } = DiscussionSortOrder.Newest;
+
     public int ActiveThreadId { get; set; }
 
     public IReadOnlyList<BookDiscussionThreadViewModel> DiscussionThreads
@@ -282,6 +384,8 @@ public class ClubBookDetailsViewModel
     public AddDiscussionPostViewModel NewDiscussion { get; set; } = new();
 
     public CreateBookDiscussionThreadViewModel NewThread { get; set; } = new();
+
+    public CreateDiscussionPollViewModel NewPoll { get; set; } = new();
 }
 
 public class BookDiscussionThreadViewModel

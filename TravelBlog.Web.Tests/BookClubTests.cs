@@ -61,7 +61,7 @@ public sealed class BookClubTests
         Assert.Contains(book.Title, bookHtml);
         Assert.Contains(book.ImagePath!, indexHtml);
         Assert.Contains(
-            book.ReadingDate.ToString("MMMM d, yyyy"),
+            book.EndDate.ToString("MMM d, yyyy"),
             indexHtml);
         Assert.Contains("Combined Reading Timeline", timelineHtml);
         Assert.Contains(club.Name, timelineHtml);
@@ -242,7 +242,8 @@ public sealed class BookClubTests
             Form(token,
                 ("Title", "Unauthorized Book"),
                 ("AuthorName", "Nobody"),
-                ("ReadingDate", "2026-01-01")));
+                ("StartDate", "2025-12-01"),
+                ("EndDate", "2026-01-01")));
         var notice = await client.PostAsync(
             $"/BookClubs/{club.Slug}/Notices",
             Form(token, ("NewNotice.Body", "Unauthorized notice.")));
@@ -293,7 +294,8 @@ public sealed class BookClubTests
                 ("Title", "Test Novel"),
                 ("AuthorName", "A. Writer"),
                 ("Notes", "First pick."),
-                ("ReadingDate", DateTime.UtcNow.Date.ToString("yyyy-MM-dd"))
+                ("StartDate", DateTime.UtcNow.Date.AddDays(-7).ToString("yyyy-MM-dd")),
+                ("EndDate", DateTime.UtcNow.Date.ToString("yyyy-MM-dd"))
             ],
             PngBytes,
             "image/png",
@@ -327,6 +329,66 @@ public sealed class BookClubTests
             Assert.True(await context.ClubNotices.AnyAsync(existing =>
                 existing.ClubId == club.Id &&
                 existing.Body == "Welcome to the club."));
+        });
+    }
+
+    [Fact]
+    public async Task AdminCanEditAndDeleteNotice()
+    {
+        var admin = await CreateUserAsync("Notice Editor Admin", isAdmin: true);
+        var club = await CreateClubAsync(admin, "edit-delete-notice");
+        using var client = await LoginAsync(admin.Email!);
+
+        var createToken = await GetAntiforgeryTokenAsync(
+            client,
+            $"/BookClubs/{club.Slug}");
+        var create = await client.PostAsync(
+            $"/BookClubs/{club.Slug}/Notices",
+            Form(createToken, ("NewNotice.Body", "Original notice.")));
+        Assert.Equal(HttpStatusCode.Redirect, create.StatusCode);
+
+        ClubNotice notice = null!;
+        await WithServicesAsync(async services =>
+        {
+            notice = await services
+                .GetRequiredService<BlogDbContext>()
+                .ClubNotices
+                .SingleAsync(existing =>
+                    existing.ClubId == club.Id &&
+                    existing.Body == "Original notice.");
+        });
+
+        var editToken = await GetAntiforgeryTokenAsync(
+            client,
+            $"/BookClubs/{club.Slug}");
+        var edit = await client.PostAsync(
+            $"/BookClubs/{club.Slug}/Notices/{notice.Id}/Edit",
+            Form(editToken, ("Body", "Updated notice.")));
+        Assert.Equal(HttpStatusCode.Redirect, edit.StatusCode);
+
+        await WithServicesAsync(async services =>
+        {
+            var stored = await services
+                .GetRequiredService<BlogDbContext>()
+                .ClubNotices
+                .SingleAsync(existing => existing.Id == notice.Id);
+            Assert.Equal("Updated notice.", stored.Body);
+        });
+
+        var deleteToken = await GetAntiforgeryTokenAsync(
+            client,
+            $"/BookClubs/{club.Slug}");
+        var delete = await client.PostAsync(
+            $"/BookClubs/{club.Slug}/Notices/{notice.Id}/Delete",
+            Form(deleteToken));
+        Assert.Equal(HttpStatusCode.Redirect, delete.StatusCode);
+
+        await WithServicesAsync(async services =>
+        {
+            Assert.False(await services
+                .GetRequiredService<BlogDbContext>()
+                .ClubNotices
+                .AnyAsync(existing => existing.Id == notice.Id));
         });
     }
 
@@ -401,7 +463,8 @@ public sealed class BookClubTests
             Form(editToken,
                 ("Title", "Renamed Book"),
                 ("AuthorName", "New Author"),
-                ("ReadingDate", DateTime.UtcNow.Date.ToString("yyyy-MM-dd"))));
+                ("StartDate", DateTime.UtcNow.Date.AddDays(-7).ToString("yyyy-MM-dd")),
+                ("EndDate", DateTime.UtcNow.Date.ToString("yyyy-MM-dd"))));
         Assert.Equal(HttpStatusCode.Redirect, editBook.StatusCode);
 
         var deleteBookToken = await GetAntiforgeryTokenAsync(
@@ -495,6 +558,165 @@ public sealed class BookClubTests
                 .DiscussionPosts
                 .SingleAsync(existing => existing.Id == post.Id);
             Assert.Equal("Leave this alone.", stored.Body);
+        });
+    }
+
+    [Fact]
+    public async Task AdminCanPinDiscussionAndSortPosts()
+    {
+        var admin = await CreateUserAsync("Discussion Sort Admin", isAdmin: true);
+        var club = await CreateClubAsync(admin, "sort-and-pin");
+        var oldest = await CreateDiscussionAsync(club, admin, "Oldest post.");
+        var pinned = await CreateDiscussionAsync(club, admin, "Pinned post.");
+        var newest = await CreateDiscussionAsync(club, admin, "Newest post.");
+        await WithServicesAsync(async services =>
+        {
+            var context = services.GetRequiredService<BlogDbContext>();
+            var posts = await context.DiscussionPosts
+                .Where(post => post.ClubId == club.Id)
+                .ToListAsync();
+            posts.Single(post => post.Id == oldest.Id).CreatedAt =
+                DateTime.UtcNow.AddHours(-3);
+            posts.Single(post => post.Id == pinned.Id).CreatedAt =
+                DateTime.UtcNow.AddHours(-2);
+            posts.Single(post => post.Id == newest.Id).CreatedAt =
+                DateTime.UtcNow.AddHours(-1);
+            await context.SaveChangesAsync();
+        });
+
+        using var client = await LoginAsync(admin.Email!);
+        var token = await GetAntiforgeryTokenAsync(
+            client,
+            $"/BookClubs/{club.Slug}");
+        var pin = await client.PostAsync(
+            $"/BookClubs/{club.Slug}/discussions/{pinned.Id}/Pin?sort=newest",
+            Form(token));
+        Assert.Equal(HttpStatusCode.Redirect, pin.StatusCode);
+
+        var newestPage = await client.GetStringAsync(
+            $"/BookClubs/{club.Slug}?sort=newest");
+        Assert.Contains("Pinned post.", newestPage);
+        Assert.Contains("Newest post.", newestPage);
+        Assert.Contains("Oldest post.", newestPage);
+        Assert.True(
+            newestPage.IndexOf("Pinned post.", StringComparison.Ordinal) <
+            newestPage.IndexOf("Newest post.", StringComparison.Ordinal));
+        Assert.True(
+            newestPage.IndexOf("Newest post.", StringComparison.Ordinal) <
+            newestPage.IndexOf("Oldest post.", StringComparison.Ordinal));
+
+        var oldestPage = await client.GetStringAsync(
+            $"/BookClubs/{club.Slug}?sort=oldest");
+        Assert.True(
+            oldestPage.IndexOf("Pinned post.", StringComparison.Ordinal) <
+            oldestPage.IndexOf("Oldest post.", StringComparison.Ordinal));
+        Assert.True(
+            oldestPage.IndexOf("Oldest post.", StringComparison.Ordinal) <
+            oldestPage.IndexOf("Newest post.", StringComparison.Ordinal));
+
+        await WithServicesAsync(async services =>
+        {
+            Assert.True((await services
+                .GetRequiredService<BlogDbContext>()
+                .DiscussionPosts
+                .SingleAsync(post => post.Id == pinned.Id)).IsPinned);
+        });
+    }
+
+    [Fact]
+    public async Task MemberCanCreateAndVoteInClubAndBookPolls()
+    {
+        var admin = await CreateUserAsync("Poll Admin", isAdmin: true);
+        var member = await CreateUserAsync("Poll Member");
+        var club = await CreateClubAsync(admin, "discussion-polls");
+        var book = await CreateBookAsync(club, "Poll Book", daysFromToday: 1);
+        await AddMembershipAsync(club, member);
+
+        using var memberClient = await LoginAsync(member.Email!);
+        var clubToken = await GetAntiforgeryTokenAsync(
+            memberClient,
+            $"/BookClubs/{club.Slug}");
+        var createClubPoll = await memberClient.PostAsync(
+            $"/BookClubs/{club.Slug}/polls",
+            Form(
+                clubToken,
+                ("Title", "Which chapter next?"),
+                ("Options[0]", "Chapter one"),
+                ("Options[1]", "Chapter two")));
+        Assert.Equal(HttpStatusCode.Redirect, createClubPoll.StatusCode);
+
+        var bookToken = await GetAntiforgeryTokenAsync(
+            memberClient,
+            $"/BookClubs/{club.Slug}/books/{book.Id}");
+        var createBookPoll = await memberClient.PostAsync(
+            $"/BookClubs/{club.Slug}/polls?bookId={book.Id}&threadId=0",
+            Form(
+                bookToken,
+                ("Title", "Favorite character?"),
+                ("Options[0]", "Ada"),
+                ("Options[1]", "Bert")));
+        Assert.Equal(HttpStatusCode.Redirect, createBookPoll.StatusCode);
+
+        int clubPollId = 0;
+        int clubPollPostId = 0;
+        int chapterTwoId = 0;
+        await WithServicesAsync(async services =>
+        {
+            var context = services.GetRequiredService<BlogDbContext>();
+            var polls = await context.DiscussionPolls
+                .Include(poll => poll.DiscussionPost)
+                .Include(poll => poll.Options)
+                .ToListAsync();
+            var clubPoll = polls.Single(poll =>
+                poll.DiscussionPost.Body == "Which chapter next?");
+            var bookPoll = polls.Single(poll =>
+                poll.DiscussionPost.Body == "Favorite character?");
+            Assert.Null(clubPoll.DiscussionPost.ClubBookId);
+            Assert.Equal(book.Id, bookPoll.DiscussionPost.ClubBookId);
+            clubPollId = clubPoll.Id;
+            clubPollPostId = clubPoll.DiscussionPostId;
+            chapterTwoId = clubPoll.Options.Single(option =>
+                option.Text == "Chapter two").Id;
+        });
+
+        var voteToken = await GetAntiforgeryTokenAsync(
+            memberClient,
+            $"/BookClubs/{club.Slug}");
+        var vote = await memberClient.PostAsync(
+            $"/BookClubs/{club.Slug}/polls/{clubPollId}/Vote",
+            Form(voteToken, ("optionId", chapterTwoId.ToString())));
+        Assert.Equal(HttpStatusCode.Redirect, vote.StatusCode);
+
+        var clubPage = await memberClient.GetStringAsync(
+            $"/BookClubs/{club.Slug}");
+        Assert.Contains("Which chapter next?", clubPage);
+        Assert.Contains("Chapter two", clubPage);
+        Assert.Contains(member.DisplayName, clubPage);
+
+        var bookPage = await memberClient.GetStringAsync(
+            $"/BookClubs/{club.Slug}/books/{book.Id}");
+        Assert.Contains("Favorite character?", bookPage);
+        Assert.Contains("Ada", bookPage);
+
+        using var adminClient = await LoginAsync(admin.Email!);
+        var pinToken = await GetAntiforgeryTokenAsync(
+            adminClient,
+            $"/BookClubs/{club.Slug}");
+        var pin = await adminClient.PostAsync(
+            $"/BookClubs/{club.Slug}/discussions/{clubPollPostId}/Pin",
+            Form(pinToken));
+        Assert.Equal(HttpStatusCode.Redirect, pin.StatusCode);
+
+        await WithServicesAsync(async services =>
+        {
+            var context = services.GetRequiredService<BlogDbContext>();
+            Assert.True((await context.DiscussionPosts.SingleAsync(post =>
+                post.Id == clubPollPostId)).IsPinned);
+            var storedVote = await context.DiscussionPollVotes
+                .SingleAsync(existing =>
+                    existing.PollId == clubPollId &&
+                    existing.UserId == member.Id);
+            Assert.Equal(chapterTwoId, storedVote.OptionId);
         });
     }
 
@@ -648,7 +870,10 @@ public sealed class BookClubTests
                 AuthorName = "Test Author",
                 ImagePath =
                     $"https://images.example.test/{Guid.NewGuid():N}.jpg",
-                ReadingDate = DateTime.SpecifyKind(
+                StartDate = DateTime.SpecifyKind(
+                    DateTime.UtcNow.Date.AddDays(daysFromToday - 7),
+                    DateTimeKind.Utc),
+                EndDate = DateTime.SpecifyKind(
                     DateTime.UtcNow.Date.AddDays(daysFromToday),
                     DateTimeKind.Utc),
                 CreatedAt = DateTime.UtcNow

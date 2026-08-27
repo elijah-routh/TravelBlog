@@ -7,19 +7,31 @@ public static class DiscussionThreadMapper
         string clubSlug,
         string? userId,
         bool isAdmin,
-        bool canPost)
+        bool canPost,
+        string sort = DiscussionSortOrder.Newest)
     {
         var list = posts.ToList();
+        var newestFirst = DiscussionSortOrder.Normalize(sort) ==
+            DiscussionSortOrder.Newest;
         var replies = list
             .Where(post => post.ParentId is not null)
             .GroupBy(post => post.ParentId!.Value)
             .ToDictionary(
                 group => group.Key,
-                group => group.OrderBy(post => post.CreatedAt).ToList());
+                group => newestFirst
+                    ? group.OrderByDescending(post => post.CreatedAt).ToList()
+                    : group.OrderBy(post => post.CreatedAt).ToList());
 
-        return list
-            .Where(post => post.ParentId is null)
-            .OrderBy(post => post.CreatedAt)
+        var topLevelPosts = list.Where(post => post.ParentId is null);
+        topLevelPosts = newestFirst
+            ? topLevelPosts
+                .OrderByDescending(post => post.IsPinned)
+                .ThenByDescending(post => post.CreatedAt)
+            : topLevelPosts
+                .OrderByDescending(post => post.IsPinned)
+                .ThenBy(post => post.CreatedAt);
+
+        return topLevelPosts
             .Select(post => Map(
                 post,
                 clubSlug,
@@ -50,9 +62,39 @@ public static class DiscussionThreadMapper
             Body = post.Body,
             CreatedAt = post.CreatedAt,
             UpdatedAt = post.UpdatedAt,
-            CanEdit = OwnerAccess.IsAdminOrOwner(isAdmin, userId, post.AuthorId),
+            IsPinned = post.IsPinned,
+            CanPin = isAdmin && post.ParentId is null,
+            CanEdit = post.Poll is null &&
+                OwnerAccess.IsAdminOrOwner(isAdmin, userId, post.AuthorId),
             CanDelete = OwnerAccess.IsAdminOrOwner(isAdmin, userId, post.AuthorId),
-            CanReply = canReply,
+            CanReply = canReply && post.Poll is null,
+            Poll = post.Poll is null
+                ? null
+                : new DiscussionPollItemViewModel
+                {
+                    Id = post.Poll.Id,
+                    ClubSlug = clubSlug,
+                    TotalVotes = post.Poll.Options.Sum(option =>
+                        option.Votes.Count),
+                    CanVote = canReply,
+                    Options = post.Poll.Options
+                        .OrderBy(option => option.SortOrder)
+                        .Select(option =>
+                            new DiscussionPollOptionItemViewModel
+                            {
+                                Id = option.Id,
+                                Text = option.Text,
+                                IsSelectedByCurrentUser =
+                                    !string.IsNullOrWhiteSpace(userId) &&
+                                    option.Votes.Any(vote =>
+                                        vote.UserId == userId),
+                                VoterDisplayNames = option.Votes
+                                    .OrderBy(vote => vote.User.DisplayName)
+                                    .Select(vote => vote.User.DisplayName)
+                                    .ToList()
+                            })
+                        .ToList()
+                },
             Replies = childReplies
                 .Select(reply => Map(
                     reply,
@@ -64,6 +106,17 @@ public static class DiscussionThreadMapper
                 .ToList()
         };
     }
+}
+
+public static class DiscussionSortOrder
+{
+    public const string Oldest = "oldest";
+    public const string Newest = "newest";
+
+    public static string Normalize(string? sort) =>
+        string.Equals(sort, Oldest, StringComparison.OrdinalIgnoreCase)
+            ? Oldest
+            : Newest;
 }
 
 public static class OwnerAccess

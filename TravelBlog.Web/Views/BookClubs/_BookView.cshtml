@@ -56,7 +56,9 @@
                                         @book.Status
                                     </span>
                                     <time class="small text-muted">
-                                        @book.ReadingDate.ToString("MMMM d, yyyy")
+                                        @book.StartDate.ToString("MMM d, yyyy")
+                                        –
+                                        @book.EndDate.ToString("MMM d, yyyy")
                                     </time>
                                 </div>
                                 <h3 class="h5 mb-1">
@@ -137,7 +139,9 @@
                 </h3>
                 <p class="lead mb-2">@book.AuthorName</p>
                 <p class="fw-semibold mb-3">
-                    @book.ReadingDate.ToString("MMMM d, yyyy")
+                    @book.StartDate.ToString("MMM d, yyyy")
+                    –
+                    @book.EndDate.ToString("MMM d, yyyy")
                 </p>
                 @if (!string.IsNullOrWhiteSpace(book.Notes))
                 {

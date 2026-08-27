@@ -57,7 +57,8 @@ public class BookClubsController : Controller
                     CurrentBookId = currentBook?.Id,
                     CurrentBookTitle = currentBook?.Title,
                     CurrentBookImagePath = currentBook?.ImagePath,
-                    CurrentBookDate = currentBook?.ReadingDate
+                    CurrentBookStartDate = currentBook?.StartDate,
+                    CurrentBookEndDate = currentBook?.EndDate
                 };
             }).ToList()
         };
@@ -71,7 +72,7 @@ public class BookClubsController : Controller
         var books = await _context.ClubBooks
             .AsNoTracking()
             .Include(book => book.Club)
-            .OrderBy(book => book.ReadingDate)
+            .OrderBy(book => book.EndDate)
             .ThenBy(book => book.Club.Name)
             .ThenBy(book => book.Title)
             .ToListAsync();
@@ -94,7 +95,8 @@ public class BookClubsController : Controller
                 AuthorName = book.AuthorName,
                 Notes = book.Notes,
                 ImagePath = book.ImagePath,
-                ReadingDate = book.ReadingDate,
+                StartDate = book.StartDate,
+                EndDate = book.EndDate,
                 Status = ClubBookTimeline.Status(
                     book,
                     currentBooks[book.ClubId],
@@ -259,14 +261,16 @@ public class BookClubsController : Controller
     [HttpGet("{slug}")]
     public async Task<IActionResult> Details(
         string slug,
-        string? view = null)
+        string? view = null,
+        string? sort = null)
     {
         var viewModel = await BuildDetailsViewModelAsync(
             slug,
             showTimeline: string.Equals(
                 view,
                 "timeline",
-                StringComparison.OrdinalIgnoreCase));
+                StringComparison.OrdinalIgnoreCase),
+            discussionSort: sort);
         return viewModel is null ? NotFound() : View(viewModel);
     }
 
@@ -379,11 +383,72 @@ public class BookClubsController : Controller
         return RedirectToAction(nameof(Details), new { slug });
     }
 
+    [HttpPost("{slug}/Notices/{noticeId:int}/Edit")]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditNotice(
+        string slug,
+        int noticeId,
+        AddClubNoticeViewModel model)
+    {
+        var notice = await _context.ClubNotices
+            .Include(existing => existing.Club)
+            .FirstOrDefaultAsync(existing =>
+                existing.Id == noticeId &&
+                existing.Club.Slug == slug);
+        if (notice is null)
+        {
+            return NotFound();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            TempData["ErrorMessage"] =
+                ModelState.Values
+                    .SelectMany(value => value.Errors)
+                    .Select(error => error.ErrorMessage)
+                    .FirstOrDefault()
+                ?? "Enter a valid notice.";
+            return RedirectToAction(nameof(Details), new { slug });
+        }
+
+        notice.Body = model.Body.Trim();
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Notice updated.";
+        return RedirectToAction(nameof(Details), new { slug });
+    }
+
+    [HttpPost("{slug}/Notices/{noticeId:int}/Delete")]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteNotice(
+        string slug,
+        int noticeId)
+    {
+        var notice = await _context.ClubNotices
+            .Include(existing => existing.Club)
+            .FirstOrDefaultAsync(existing =>
+                existing.Id == noticeId &&
+                existing.Club.Slug == slug);
+        if (notice is null)
+        {
+            return NotFound();
+        }
+
+        _context.ClubNotices.Remove(notice);
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Notice deleted.";
+        return RedirectToAction(nameof(Details), new { slug });
+    }
+
     [HttpPost("{slug}/Discussions")]
     [Authorize]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddDiscussion(
         string slug,
+        string? sort,
         [Bind(Prefix = "NewDiscussion")] AddDiscussionPostViewModel model)
     {
         var userId = _userManager.GetUserId(User);
@@ -406,7 +471,9 @@ public class BookClubsController : Controller
 
         if (!ModelState.IsValid)
         {
-            var invalidView = await BuildDetailsViewModelAsync(slug);
+            var invalidView = await BuildDetailsViewModelAsync(
+                slug,
+                discussionSort: sort);
             if (invalidView is null)
             {
                 return NotFound();
@@ -427,7 +494,9 @@ public class BookClubsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["StatusMessage"] = "Message posted.";
-        return RedirectToAction(nameof(Details), new { slug });
+        return RedirectToAction(
+            nameof(Details),
+            new { slug, sort = DiscussionSortOrder.Normalize(sort) });
     }
 
     private async Task<BookClub?> FindClubBySlugAsync(string slug) =>
@@ -448,7 +517,8 @@ public class BookClubsController : Controller
 
     private async Task<BookClubDetailsViewModel?> BuildDetailsViewModelAsync(
         string slug,
-        bool showTimeline = false)
+        bool showTimeline = false,
+        string? discussionSort = null)
     {
         var club = await _context.BookClubs
             .AsNoTracking()
@@ -459,6 +529,12 @@ public class BookClubsController : Controller
             .Include(existing => existing.DiscussionPosts
                 .Where(post => post.ClubBookId == null))
                 .ThenInclude(post => post.Author)
+            .Include(existing => existing.DiscussionPosts
+                .Where(post => post.ClubBookId == null))
+                .ThenInclude(post => post.Poll)
+                    .ThenInclude(poll => poll!.Options)
+                        .ThenInclude(option => option.Votes)
+                            .ThenInclude(vote => vote.User)
             .FirstOrDefaultAsync(existing => existing.Slug == slug);
 
         if (club is null)
@@ -471,9 +547,10 @@ public class BookClubsController : Controller
         var isMember = !string.IsNullOrWhiteSpace(userId) &&
             club.Memberships.Any(membership => membership.UserId == userId);
         var now = DateTime.UtcNow;
+        var normalizedSort = DiscussionSortOrder.Normalize(discussionSort);
         var currentBook = ClubBookTimeline.CurrentBook(club.Books, now);
         var bookItems = club.Books
-            .OrderBy(book => book.ReadingDate)
+            .OrderBy(book => book.EndDate)
             .ThenBy(book => book.Id)
             .Select(book => new ClubBookTimelineItemViewModel
             {
@@ -482,7 +559,8 @@ public class BookClubsController : Controller
                 AuthorName = book.AuthorName,
                 Notes = book.Notes,
                 ImagePath = book.ImagePath,
-                ReadingDate = book.ReadingDate,
+                StartDate = book.StartDate,
+                EndDate = book.EndDate,
                 Status = ClubBookTimeline.Status(book, currentBook, now)
             })
             .ToList();
@@ -498,12 +576,14 @@ public class BookClubsController : Controller
             CanPost = isAdmin || isMember,
             IsAdmin = isAdmin,
             ShowTimeline = showTimeline,
+            DiscussionSort = normalizedSort,
             CurrentBook = bookItems.FirstOrDefault(book =>
                 book.Id == currentBook?.Id),
             Notices = club.Notices
                 .OrderByDescending(notice => notice.CreatedAt)
                 .Select(notice => new ClubNoticeItemViewModel
                 {
+                    Id = notice.Id,
                     AuthorDisplayName = notice.Author.DisplayName,
                     Body = notice.Body,
                     CreatedAt = notice.CreatedAt
@@ -515,7 +595,8 @@ public class BookClubsController : Controller
                 club.Slug,
                 userId,
                 isAdmin,
-                isAdmin || isMember)
+                isAdmin || isMember,
+                normalizedSort)
         };
     }
 

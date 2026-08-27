@@ -27,6 +27,14 @@ public class BlogDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<DiscussionPost> DiscussionPosts => Set<DiscussionPost>();
 
+    public DbSet<DiscussionPoll> DiscussionPolls => Set<DiscussionPoll>();
+
+    public DbSet<DiscussionPollOption> DiscussionPollOptions =>
+        Set<DiscussionPollOption>();
+
+    public DbSet<DiscussionPollVote> DiscussionPollVotes =>
+        Set<DiscussionPollVote>();
+
     public DbSet<PostComment> PostComments => Set<PostComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -133,6 +141,40 @@ public class BlogDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany(post => post.Replies)
                 .HasForeignKey(post => post.ParentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DiscussionPoll>(entity =>
+        {
+            entity.HasIndex(poll => poll.DiscussionPostId).IsUnique();
+
+            entity.HasOne(poll => poll.DiscussionPost)
+                .WithOne(post => post.Poll)
+                .HasForeignKey<DiscussionPoll>(poll => poll.DiscussionPostId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DiscussionPollOption>(entity =>
+        {
+            entity.HasOne(option => option.Poll)
+                .WithMany(poll => poll.Options)
+                .HasForeignKey(option => option.PollId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DiscussionPollVote>(entity =>
+        {
+            entity.HasIndex(vote => new { vote.PollId, vote.UserId })
+                .IsUnique();
+
+            entity.HasOne(vote => vote.Option)
+                .WithMany(option => option.Votes)
+                .HasForeignKey(vote => vote.OptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(vote => vote.User)
+                .WithMany(user => user.DiscussionPollVotes)
+                .HasForeignKey(vote => vote.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<PostComment>(entity =>

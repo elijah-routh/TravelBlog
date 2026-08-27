@@ -34,7 +34,7 @@ body {
     text-align: center;
     background:
         linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
-        url("/images/CountryPictures/colca_canyon_wide.jpg") center / cover no-repeat;
+        url("/images/GiantLampoonBanner.png") center / cover no-repeat;
 }
 
 .hero-content {
@@ -424,6 +424,68 @@ body {
 .icon-action-danger:hover {
     background: #fff0ee;
     color: #a2352d;
+}
+
+.discussion-pinned-label {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    background: #eee8dc;
+    color: #59636d;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.discussion-pin-active {
+    color: #252525;
+}
+
+.discussion-poll {
+    max-width: 640px;
+}
+
+.discussion-poll-option {
+    margin-bottom: 0.5rem;
+    border: 1px solid #ddd5c8;
+    border-radius: 8px;
+    background: #faf8f3;
+}
+
+.discussion-poll-option summary {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0.85rem;
+    list-style: none;
+}
+
+.discussion-poll-option summary::-webkit-details-marker {
+    display: none;
+}
+
+.discussion-poll-choice {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 600;
+}
+
+.discussion-poll-count {
+    flex: 0 0 auto;
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.discussion-poll-voters {
+    padding: 0 0.85rem 0.75rem 2rem;
+    color: #59636d;
+    font-size: 0.85rem;
 }
 
 .reply-toggle {

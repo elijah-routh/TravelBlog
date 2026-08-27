@@ -94,8 +94,11 @@ public class ClubBooksController : Controller
                 : model.Notes.Trim(),
             ImagePath = uploadedImage?.PublicUrl,
             ImageObjectKey = uploadedImage?.ObjectKey,
-            ReadingDate = DateTime.SpecifyKind(
-                model.ReadingDate.Date,
+            StartDate = DateTime.SpecifyKind(
+                model.StartDate.Date,
+                DateTimeKind.Utc),
+            EndDate = DateTime.SpecifyKind(
+                model.EndDate.Date,
                 DateTimeKind.Utc),
             CreatedAt = DateTime.UtcNow
         };
@@ -140,7 +143,8 @@ public class ClubBooksController : Controller
             AuthorName = book.AuthorName,
             Notes = book.Notes,
             CurrentImagePath = book.ImagePath,
-            ReadingDate = book.ReadingDate
+            StartDate = book.StartDate,
+            EndDate = book.EndDate
         });
     }
 
@@ -198,8 +202,11 @@ public class ClubBooksController : Controller
             book.ImagePath = uploadedImage.PublicUrl;
             book.ImageObjectKey = uploadedImage.ObjectKey;
         }
-        book.ReadingDate = DateTime.SpecifyKind(
-            model.ReadingDate.Date,
+        book.StartDate = DateTime.SpecifyKind(
+            model.StartDate.Date,
+            DateTimeKind.Utc);
+        book.EndDate = DateTime.SpecifyKind(
+            model.EndDate.Date,
             DateTimeKind.Utc);
 
         try
@@ -277,12 +284,14 @@ public class ClubBooksController : Controller
     public async Task<IActionResult> Details(
         string clubSlug,
         int bookId,
-        int? thread = null)
+        int? thread = null,
+        string? sort = null)
     {
         var viewModel = await BuildDetailsViewModelAsync(
             clubSlug,
             bookId,
-            thread);
+            thread,
+            sort);
         return viewModel is null ? NotFound() : View(viewModel);
     }
 
@@ -372,6 +381,7 @@ public class ClubBooksController : Controller
         string clubSlug,
         int bookId,
         int threadId,
+        string? sort,
         [Bind(Prefix = "NewDiscussion")] AddDiscussionPostViewModel model)
     {
         var userId = _userManager.GetUserId(User);
@@ -414,7 +424,8 @@ public class ClubBooksController : Controller
             var invalidView = await BuildDetailsViewModelAsync(
                 clubSlug,
                 bookId,
-                threadId);
+                threadId,
+                sort);
             if (invalidView is null)
             {
                 return NotFound();
@@ -438,7 +449,13 @@ public class ClubBooksController : Controller
         TempData["StatusMessage"] = "Message posted.";
         return RedirectToAction(
             nameof(Details),
-            new { clubSlug, bookId, thread = threadId });
+            new
+            {
+                clubSlug,
+                bookId,
+                thread = threadId,
+                sort = DiscussionSortOrder.Normalize(sort)
+            });
     }
 
     private async Task<BookClub?> FindClubAsync(string clubSlug) =>
@@ -476,7 +493,8 @@ public class ClubBooksController : Controller
     private async Task<ClubBookDetailsViewModel?> BuildDetailsViewModelAsync(
         string clubSlug,
         int bookId,
-        int? requestedThreadId = null)
+        int? requestedThreadId = null,
+        string? discussionSort = null)
     {
         var book = await _context.ClubBooks
             .AsNoTracking()
@@ -484,6 +502,11 @@ public class ClubBooksController : Controller
                 .ThenInclude(club => club.Memberships)
             .Include(existing => existing.DiscussionPosts)
                 .ThenInclude(post => post.Author)
+            .Include(existing => existing.DiscussionPosts)
+                .ThenInclude(post => post.Poll)
+                    .ThenInclude(poll => poll!.Options)
+                        .ThenInclude(option => option.Votes)
+                            .ThenInclude(vote => vote.User)
             .Include(existing => existing.DiscussionThreads)
             .FirstOrDefaultAsync(existing =>
                 existing.Id == bookId &&
@@ -505,6 +528,7 @@ public class ClubBooksController : Controller
             (book.Club.Memberships?.Any(membership =>
                 membership.UserId == userId) ?? false);
         var now = DateTime.UtcNow;
+        var normalizedSort = DiscussionSortOrder.Normalize(discussionSort);
         var currentBook = ClubBookTimeline.CurrentBook(clubBooks, now);
         var threadItems = new List<BookDiscussionThreadViewModel>
         {
@@ -519,7 +543,8 @@ public class ClubBooksController : Controller
                     book.Club.Slug,
                     userId,
                     isAdmin,
-                    isAdmin || isMember)
+                    isAdmin || isMember,
+                    normalizedSort)
             }
         };
         threadItems.AddRange(book.DiscussionThreads
@@ -536,7 +561,8 @@ public class ClubBooksController : Controller
                     book.Club.Slug,
                     userId,
                     isAdmin,
-                    isAdmin || isMember)
+                    isAdmin || isMember,
+                    normalizedSort)
             }));
         var activeThreadId = requestedThreadId is int requested &&
             threadItems.Any(thread => thread.Id == requested)
@@ -552,11 +578,13 @@ public class ClubBooksController : Controller
             AuthorName = book.AuthorName,
             Notes = book.Notes,
             ImagePath = book.ImagePath,
-            ReadingDate = book.ReadingDate,
+            StartDate = book.StartDate,
+            EndDate = book.EndDate,
             Status = ClubBookTimeline.Status(book, currentBook, now),
             CanPost = isAdmin || isMember,
             IsAdmin = isAdmin,
             IsAuthenticated = User.Identity?.IsAuthenticated == true,
+            DiscussionSort = normalizedSort,
             ActiveThreadId = activeThreadId,
             DiscussionThreads = threadItems
         };

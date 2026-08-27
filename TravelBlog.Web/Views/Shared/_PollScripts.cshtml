@@ -1,0 +1,28 @@
+<script>
+    document.addEventListener("click", function (event) {
+        const button = event.target.closest(".poll-add-option");
+        if (!button) {
+            return;
+        }
+
+        const form = button.closest(".discussion-poll-form");
+        const options = form.querySelector(".poll-options");
+        const optionCount = options.querySelectorAll("input").length;
+        if (optionCount >= 10) {
+            button.disabled = true;
+            return;
+        }
+
+        const input = document.createElement("input");
+        input.name = `Options[${optionCount}]`;
+        input.className = "form-control mb-2";
+        input.maxLength = 200;
+        input.required = true;
+        options.appendChild(input);
+        input.focus();
+
+        if (optionCount + 1 >= 10) {
+            button.disabled = true;
+        }
+    });
+</script>

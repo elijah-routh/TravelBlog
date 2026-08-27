@@ -12,14 +12,20 @@
     <span asp-validation-for="AuthorName" class="text-danger"></span>
 </div>
 
-<div class="mb-3">
-    <label asp-for="ReadingDate" class="form-label"></label>
-    <input asp-for="ReadingDate" class="form-control" type="date" />
-    <div class="form-text">
-        Books appear on the timeline in reading-date order.
-        The latest date that is today or earlier is the current book.
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <label asp-for="StartDate" class="form-label"></label>
+        <input asp-for="StartDate" class="form-control" type="date" />
+        <span asp-validation-for="StartDate" class="text-danger"></span>
     </div>
-    <span asp-validation-for="ReadingDate" class="text-danger"></span>
+    <div class="col-md-6">
+        <label asp-for="EndDate" class="form-label"></label>
+        <input asp-for="EndDate" class="form-control" type="date" />
+        <span asp-validation-for="EndDate" class="text-danger"></span>
+    </div>
+    <div class="form-text">
+        Books are ordered on timelines by their end date.
+    </div>
 </div>
 
 <div class="mb-3">

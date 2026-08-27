@@ -139,6 +139,7 @@ public class DiscussionPostsController : Controller
     public async Task<IActionResult> Reply(
         string slug,
         int id,
+        string? sort,
         AddDiscussionPostViewModel model)
     {
         var userId = _userManager.GetUserId(User);
@@ -166,7 +167,7 @@ public class DiscussionPostsController : Controller
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] = "A reply message is required.";
-            return RedirectToThread(parent, slug);
+            return RedirectToThread(parent, slug, sort);
         }
 
         _context.DiscussionPosts.Add(new DiscussionPost
@@ -182,7 +183,35 @@ public class DiscussionPostsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["StatusMessage"] = "Reply posted.";
-        return RedirectToThread(parent, slug);
+        return RedirectToThread(parent, slug, sort);
+    }
+
+    [HttpPost("{id:int}/Pin")]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TogglePin(
+        string slug,
+        int id,
+        string? sort)
+    {
+        var post = await FindPostAsync(slug, id, asNoTracking: false);
+        if (post is null)
+        {
+            return NotFound();
+        }
+
+        if (post.ParentId is not null)
+        {
+            return BadRequest();
+        }
+
+        post.IsPinned = !post.IsPinned;
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = post.IsPinned
+            ? "Discussion post pinned."
+            : "Discussion post unpinned.";
+        return RedirectToThread(post, slug, sort);
     }
 
     private async Task<DiscussionPost?> FindPostAsync(
@@ -222,7 +251,10 @@ public class DiscussionPostsController : Controller
             membership.ClubId == clubId && membership.UserId == userId);
     }
 
-    private IActionResult RedirectToThread(DiscussionPost post, string slug) =>
+    private IActionResult RedirectToThread(
+        DiscussionPost post,
+        string slug,
+        string? sort = null) =>
         post.ClubBookId is int bookId
             ? RedirectToAction(
                 "Details",
@@ -231,7 +263,19 @@ public class DiscussionPostsController : Controller
                 {
                     clubSlug = slug,
                     bookId,
-                    thread = post.BookDiscussionThreadId ?? 0
+                    thread = post.BookDiscussionThreadId ?? 0,
+                    sort = string.IsNullOrWhiteSpace(sort)
+                        ? null
+                        : DiscussionSortOrder.Normalize(sort)
                 })
-            : RedirectToAction("Details", "BookClubs", new { slug });
+            : RedirectToAction(
+                "Details",
+                "BookClubs",
+                new
+                {
+                    slug,
+                    sort = string.IsNullOrWhiteSpace(sort)
+                        ? null
+                        : DiscussionSortOrder.Normalize(sort)
+                });
 }

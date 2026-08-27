@@ -1,0 +1,57 @@
+@model DiscussionPollItemViewModel
+
+<form
+    asp-controller="DiscussionPolls"
+    asp-action="Vote"
+    asp-route-slug="@Model.ClubSlug"
+    asp-route-pollId="@Model.Id"
+    asp-route-sort="@(Context.Request.Query["sort"].ToString())"
+    method="post"
+    class="discussion-poll mb-3">
+    @foreach (var option in Model.Options)
+    {
+        <details class="discussion-poll-option">
+            <summary>
+                <span class="discussion-poll-choice">
+                    @if (Model.CanVote)
+                    {
+                        <input
+                            type="radio"
+                            name="optionId"
+                            value="@option.Id"
+                            checked="@option.IsSelectedByCurrentUser"
+                            required
+                            aria-label="Vote for @option.Text" />
+                    }
+                    <span>@option.Text</span>
+                </span>
+                <span class="discussion-poll-count">
+                    @option.VoterDisplayNames.Count
+                    @(option.VoterDisplayNames.Count == 1 ? "vote" : "votes")
+                </span>
+            </summary>
+            <div class="discussion-poll-voters">
+                @if (option.VoterDisplayNames.Count == 0)
+                {
+                    <span class="text-muted">No votes yet.</span>
+                }
+                else
+                {
+                    @string.Join(", ", option.VoterDisplayNames)
+                }
+            </div>
+        </details>
+    }
+
+    <p class="small text-muted mt-2 mb-2">
+        @Model.TotalVotes @(Model.TotalVotes == 1 ? "vote" : "votes") total
+    </p>
+    @if (Model.CanVote)
+    {
+        <button type="submit" class="btn btn-sm btn-outline-primary">
+            @(Model.Options.Any(option => option.IsSelectedByCurrentUser)
+                ? "Change Vote"
+                : "Vote")
+        </button>
+    }
+</form>

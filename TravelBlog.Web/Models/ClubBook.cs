@@ -34,8 +34,13 @@ public class ClubBook
 
     [Required]
     [DataType(DataType.Date)]
-    [Display(Name = "Reading date")]
-    public DateTime ReadingDate { get; set; }
+    [Display(Name = "Start date")]
+    public DateTime StartDate { get; set; }
+
+    [Required]
+    [DataType(DataType.Date)]
+    [Display(Name = "End date")]
+    public DateTime EndDate { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

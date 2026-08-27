@@ -49,7 +49,9 @@
                                             @book.Status
                                         </span>
                                         <time class="small text-muted">
-                                            @book.ReadingDate.ToString("MMMM d, yyyy")
+                                            @book.StartDate.ToString("MMM d, yyyy")
+                                            –
+                                            @book.EndDate.ToString("MMM d, yyyy")
                                         </time>
                                         <a
                                             asp-controller="BookClubs"
