@@ -26,21 +26,66 @@ body {
 .hero {
     position: relative;
     display: flex;
-    min-height: 520px;
+    height: clamp(400px, calc(100vw * 724 / 2172), 640px);
     align-items: center;
     justify-content: center;
     overflow: hidden;
     color: #fff;
     text-align: center;
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
-        url("/images/GiantLampoonBanner.png") center / cover no-repeat;
+    background: #c4b396;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.28),
+        rgba(0, 0, 0, 0.4)
+    );
+}
+
+.hero-marquee {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.hero-marquee-track {
+    display: flex;
+    height: 100%;
+    width: max-content;
+    animation: hero-marquee 300s linear infinite;
+}
+
+.hero-marquee-track img {
+    display: block;
+    height: 100%;
+    width: auto;
+    max-width: none;
+    flex-shrink: 0;
 }
 
 .hero-content {
+    position: relative;
+    z-index: 2;
     width: 100%;
     max-width: 800px;
     padding: 40px 20px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+}
+
+@keyframes hero-marquee {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
 }
 
 .hero h1 {
@@ -704,20 +749,12 @@ body {
 
 /* Responsive */
 @media (min-width: 768px) and (max-width: 991px) {
-    .hero {
-        min-height: 450px;
-    }
-
     .hero h1 {
         font-size: 3rem;
     }
 }
 
 @media (max-width: 767px) {
-    .hero {
-        min-height: 400px;
-    }
-
     .hero h1 {
         font-size: 2.4rem;
     }
@@ -816,6 +853,10 @@ body {
     html,
     .editorial-card-row {
         scroll-behavior: auto;
+    }
+
+    .hero-marquee-track {
+        animation: none;
     }
 
     .travel-card {

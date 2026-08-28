@@ -6,6 +6,17 @@
 
 <!-- Hero -->
 <header class="hero">
+    <div class="hero-marquee" aria-hidden="true">
+        <div class="hero-marquee-track">
+            @for (var i = 0; i < 4; i++)
+            {
+                <img
+                    src="~/images/GiantLampoonBannerMerge.png"
+                    alt="" />
+            }
+        </div>
+    </div>
+
     <div class="hero-content">
         <p class="text-uppercase mb-2">
             Literature, fiction, and satire
@@ -14,8 +25,8 @@
         <h1>Giant Lampoon</h1>
 
         <p>
-            An independent publication for literature and stuff,
-            fiction and satire, and everything else.
+            An independent publication for creative stuff,
+            super functional book clubs, and a lil something different.
         </p>
 
         <a
@@ -139,13 +150,11 @@
                 <h2>About Giant Lampoon</h2>
 
                 <p>
-                    Giant Lampoon collects literature and stuff,
-                    fiction and satire, and other writing.
+                    Giant Lampoon is about literature and stuff.
                 </p>
 
                 <p>
-                    Each section offers a different kind of story,
-                    from literature to fiction and satire to everything else.
+                    Join the totally cool book club!
                 </p>
 
                 <a
@@ -159,7 +168,7 @@
     </div>
 </section>
 
-<!-- Newsletter -->
+@* <!-- Newsletter -->
 <section class="content-section">
     <div class="container">
         <div class="newsletter text-center">
@@ -206,7 +215,7 @@
             </div>
         </div>
     </div>
-</section>
+</section> *@
 
 @section Scripts {
     <script>
