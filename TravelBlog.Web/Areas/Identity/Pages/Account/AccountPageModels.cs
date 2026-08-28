@@ -1,14 +1,22 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.WebUtilities;
+using TravelBlog.Web.Authorization;
 using TravelBlog.Web.Models;
+using TravelBlog.Web.Services;
 
 namespace TravelBlog.Web.Areas.Identity.Pages.Account;
 
 [AllowAnonymous]
-public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager) : PageModel
+[EnableRateLimiting(RateLimitPolicyNames.Registration)]
+public class RegisterModel(
+    UserManager<ApplicationUser> userManager,
+    IAccountEmailService accountEmailService) : PageModel
 {
     [BindProperty] public RegisterInput Input { get; set; } = new();
     public string? ReturnUrl { get; set; }
@@ -17,7 +25,9 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
-        returnUrl ??= Url.Content("~/");
+        returnUrl = Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : Url.Content("~/");
         if (!ModelState.IsValid) return Page();
 
         var user = new ApplicationUser
@@ -29,8 +39,21 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
         var result = await userManager.CreateAsync(user, Input.Password);
         if (result.Succeeded)
         {
-            await signInManager.SignInAsync(user, isPersistent: false);
-            return LocalRedirect(returnUrl);
+            var token = await userManager
+                .GenerateEmailConfirmationTokenAsync(user);
+            var code = WebEncoders.Base64UrlEncode(
+                Encoding.UTF8.GetBytes(token));
+            var callbackUrl = Url.Page(
+                "/Account/ConfirmEmail",
+                pageHandler: null,
+                values: new { area = "Identity", userId = user.Id, code, returnUrl },
+                protocol: Request.Scheme)!;
+            await accountEmailService.SendConfirmationAsync(
+                user,
+                callbackUrl,
+                HttpContext.RequestAborted);
+
+            return RedirectToPage("./RegisterConfirmation");
         }
 
         foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
@@ -49,7 +72,9 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
 }
 
 [AllowAnonymous]
-public class LoginModel(SignInManager<ApplicationUser> signInManager) : PageModel
+[EnableRateLimiting(RateLimitPolicyNames.Login)]
+public class LoginModel(
+    SignInManager<ApplicationUser> signInManager) : PageModel
 {
     [BindProperty] public LoginInput Input { get; set; } = new();
     public string? ReturnUrl { get; set; }
@@ -58,12 +83,24 @@ public class LoginModel(SignInManager<ApplicationUser> signInManager) : PageMode
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
-        returnUrl ??= Url.Content("~/");
+        returnUrl = Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : Url.Content("~/");
         if (!ModelState.IsValid) return Page();
 
         var result = await signInManager.PasswordSignInAsync(
-            Input.Email.Trim(), Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            Input.Email.Trim(),
+            Input.Password,
+            Input.RememberMe,
+            lockoutOnFailure: true);
         if (result.Succeeded) return LocalRedirect(returnUrl);
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "This account is temporarily locked. Try again in 15 minutes.");
+            return Page();
+        }
         if (result.RequiresTwoFactor)
         {
             return RedirectToPage(
@@ -73,6 +110,14 @@ public class LoginModel(SignInManager<ApplicationUser> signInManager) : PageMode
                     ReturnUrl = returnUrl,
                     RememberMe = Input.RememberMe
                 });
+        }
+        if (result.IsNotAllowed)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "You may need to confirm your email before logging in. " +
+                "You can request a new confirmation email below.");
+            return Page();
         }
 
         ModelState.AddModelError(string.Empty, "Invalid login attempt.");

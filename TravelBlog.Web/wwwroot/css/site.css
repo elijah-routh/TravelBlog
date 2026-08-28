@@ -58,7 +58,9 @@ body {
     display: flex;
     height: 100%;
     width: max-content;
-    animation: hero-marquee 300s linear infinite;
+    will-change: transform;
+    backface-visibility: hidden;
+    animation: hero-marquee 256s linear infinite;
 }
 
 .hero-marquee-track img {
@@ -67,6 +69,32 @@ body {
     width: auto;
     max-width: none;
     flex-shrink: 0;
+    backface-visibility: hidden;
+    filter: blur(0.2px);
+}
+
+.hero-static-image {
+    position: absolute;
+    inset: 0;
+
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+    object-position: center;
+
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.hero-static .hero-marquee-track {
+    visibility: hidden;
+    animation-play-state: paused;
+}
+
+.hero-static .hero-static-image {
+    opacity: 1;
 }
 
 .hero-content {
@@ -78,13 +106,44 @@ body {
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
 }
 
+.hero-motion-toggle {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    z-index: 3;
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 999px;
+    background: rgba(20, 20, 20, 0.72);
+    color: #fff;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.hero-motion-toggle:hover {
+    background: rgba(20, 20, 20, 0.9);
+}
+
+.hero-motion-toggle:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 2px;
+}
+
+.hero-motion-toggle-icon {
+    width: 0.75rem;
+    text-align: center;
+}
+
 @keyframes hero-marquee {
     from {
-        transform: translateX(0);
+        transform: translate3d(0, 0, 0);
     }
 
     to {
-        transform: translateX(-50%);
+        transform: translate3d(-50%, 0, 0);
     }
 }
 
@@ -860,6 +919,45 @@ body {
     }
 
     .travel-card {
+        transition: none;
+    }
+}
+
+.verification-toast-container {
+    top: 4.5rem !important;
+    z-index: 1090;
+}
+
+.verification-email-toast {
+    max-width: min(24rem, calc(100vw - 2rem));
+}
+
+.account-remove-card {
+    max-width: 42rem;
+}
+
+.account-remove-button {
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+    .verification-toast-container {
+        right: 0;
+        left: 0;
+    }
+
+    .verification-email-toast {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .verification-email-toast {
         transition: none;
     }
 }

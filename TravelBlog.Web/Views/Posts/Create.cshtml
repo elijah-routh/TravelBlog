@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Create Post";
+    var canCreatePost = ViewData["CanCreatePost"] is true;
 }
 
 <section class="content-section">
@@ -10,6 +11,20 @@
             <div class="col-sm-12 col-lg-8">
                 <h1 class="mb-4">Create a New Post</h1>
 
+                @if (!canCreatePost)
+                {
+                    <div class="alert alert-warning" role="status">
+                        Verify your email before creating a post.
+                        <a
+                            asp-area="Identity"
+                            asp-page="/Account/Manage/Email"
+                            class="alert-link">
+                            Review email verification
+                        </a>.
+                    </div>
+                }
+                else
+                {
                 <form
                     asp-controller="Posts"
                     asp-action="Create"
@@ -111,6 +126,7 @@
                             asp-for="Content"
                             class="form-control"
                             rows="14"
+                            maxlength="@PostContentLimits.MaximumLength"
                             placeholder="Write the complete post here.">
                         </textarea>
 
@@ -168,6 +184,7 @@
                         Cancel
                     </a>
                 </form>
+                }
             </div>
         </div>
     </div>

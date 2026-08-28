@@ -5,6 +5,8 @@
 
 @{
     ViewData["Title"] = "Posts";
+    var currentUser = await UserManager.GetUserAsync(User);
+    var canWrite = currentUser?.EmailConfirmed == true;
 }
 
 <section class="content-section">
@@ -18,12 +20,15 @@
                 </p>
             </div>
 
-            <a
-                asp-controller="Posts"
-                asp-action="Create"
-                class="btn btn-primary">
-                Create New Post
-            </a>
+            @if (canWrite)
+            {
+                <a
+                    asp-controller="Posts"
+                    asp-action="Create"
+                    class="btn btn-primary">
+                    Create New Post
+                </a>
+            }
         </div>
 
         @if (!Model.Any())
@@ -31,12 +36,15 @@
             <div class="alert alert-info">
                 No posts have been created yet.
 
-                <a
-                    asp-controller="Posts"
-                    asp-action="Create"
-                    class="alert-link">
-                    Create your first post.
-                </a>
+                @if (canWrite)
+                {
+                    <a
+                        asp-controller="Posts"
+                        asp-action="Create"
+                        class="alert-link">
+                        Create your first post.
+                    </a>
+                }
             </div>
         }
         else
@@ -105,8 +113,9 @@
                                         View
                                     </a>
 
-                                    @if (User.IsInRole(RoleNames.Admin) ||
-                                        post.AuthorId == UserManager.GetUserId(User))
+                                    @if (canWrite &&
+                                        (User.IsInRole(RoleNames.Admin) ||
+                                         post.AuthorId == UserManager.GetUserId(User)))
                                     {
                                         <a
                                             asp-action="Edit"

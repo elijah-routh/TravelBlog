@@ -106,7 +106,8 @@
                         <textarea
                             asp-for="Content"
                             class="form-control"
-                            rows="14">
+                            rows="14"
+                            maxlength="@PostContentLimits.MaximumLength">
                         </textarea>
 
                         <span

@@ -283,6 +283,18 @@
                     </button>
                 </form>
             }
+            else if (Model.IsAuthenticated && !Model.IsVerified)
+            {
+                <div class="alert alert-warning mb-0" role="status">
+                    Verify your email before participating in club discussions.
+                    <a
+                        asp-area="Identity"
+                        asp-page="/Account/Manage/Email"
+                        class="alert-link">
+                        Review email verification
+                    </a>.
+                </div>
+            }
             else if (Model.IsAuthenticated)
             {
                 <p class="text-muted mb-0">

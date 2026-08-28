@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using TravelBlog.Web.Authorization;
 using TravelBlog.Web.Data;
@@ -16,6 +17,7 @@ public class PostsController : Controller
     private readonly IAuthorizationService _authorizationService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IImageStorage _imageStorage;
+    private readonly IImageUploadRateLimiter _imageUploadRateLimiter;
     private readonly ILogger<PostsController> _logger;
 
     public PostsController(
@@ -23,12 +25,14 @@ public class PostsController : Controller
         IAuthorizationService authorizationService,
         UserManager<ApplicationUser> userManager,
         IImageStorage imageStorage,
+        IImageUploadRateLimiter imageUploadRateLimiter,
         ILogger<PostsController> logger)
     {
         _context = context;
         _authorizationService = authorizationService;
         _userManager = userManager;
         _imageStorage = imageStorage;
+        _imageUploadRateLimiter = imageUploadRateLimiter;
         _logger = logger;
     }
 
@@ -94,6 +98,7 @@ public class PostsController : Controller
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitPolicyNames.Comments)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddComment(
         string slug,
@@ -130,6 +135,7 @@ public class PostsController : Controller
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitPolicyNames.Comments)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ReplyComment(
         int id,
@@ -298,8 +304,12 @@ public class PostsController : Controller
     }
 
     // GET: /Posts/Create
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
+        ViewData["CanCreatePost"] =
+            (await _authorizationService.AuthorizeAsync(
+                User,
+                PolicyNames.VerifiedEmail)).Succeeded;
         return View(new CreatePostViewModel());
     }
 
@@ -310,6 +320,7 @@ public class PostsController : Controller
         CreatePostViewModel model,
         CancellationToken cancellationToken)
     {
+        ViewData["CanCreatePost"] = true;
         var userId = _userManager.GetUserId(User);
 
         if (string.IsNullOrWhiteSpace(userId))
@@ -355,6 +366,14 @@ public class PostsController : Controller
 
         if (model.FeaturedImage is not null)
         {
+            using var lease = _imageUploadRateLimiter.Acquire(HttpContext);
+            if (!lease.IsAcquired)
+            {
+                return StatusCode(
+                    StatusCodes.Status429TooManyRequests,
+                    "Too many image uploads. Please try again later.");
+            }
+
             await using var imageStream =
                 model.FeaturedImage.OpenReadStream();
             uploadedImage = await _imageStorage.UploadAsync(
@@ -527,6 +546,14 @@ public class PostsController : Controller
 
         if (model.FeaturedImage is not null)
         {
+            using var lease = _imageUploadRateLimiter.Acquire(HttpContext);
+            if (!lease.IsAcquired)
+            {
+                return StatusCode(
+                    StatusCodes.Status429TooManyRequests,
+                    "Too many image uploads. Please try again later.");
+            }
+
             await using var imageStream =
                 model.FeaturedImage.OpenReadStream();
             uploadedImage = await _imageStorage.UploadAsync(
@@ -703,7 +730,9 @@ public class PostsController : Controller
         AddPostCommentViewModel? newComment = null)
     {
         var userId = _userManager.GetUserId(User);
-        var isAdmin = User.IsInRole(RoleNames.Admin);
+        var currentUser = await _userManager.GetUserAsync(User);
+        var isVerified = currentUser?.EmailConfirmed == true;
+        var isAdmin = isVerified && User.IsInRole(RoleNames.Admin);
         var comments = await _context.PostComments
             .AsNoTracking()
             .Include(comment => comment.Author)
@@ -714,14 +743,19 @@ public class PostsController : Controller
         return new PostDetailsViewModel
         {
             Post = post,
-            CanComment = User.Identity?.IsAuthenticated == true,
+            CanComment = isVerified,
             IsAuthenticated = User.Identity?.IsAuthenticated == true,
+            CanManagePost = isVerified &&
+                OwnerAccess.IsAdminOrOwner(
+                    isAdmin,
+                    userId,
+                    post.AuthorId),
             NewComment = newComment ?? new AddPostCommentViewModel(),
             Comments = PostCommentThreadMapper.Build(
                 comments,
-                userId,
+                isVerified ? userId : null,
                 isAdmin,
-                canReply: User.Identity?.IsAuthenticated == true)
+                canReply: isVerified)
         };
     }
 

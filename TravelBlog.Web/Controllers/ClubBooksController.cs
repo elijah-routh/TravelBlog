@@ -15,17 +15,20 @@ public class ClubBooksController : Controller
     private readonly BlogDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IImageStorage _imageStorage;
+    private readonly IImageUploadRateLimiter _imageUploadRateLimiter;
     private readonly ILogger<ClubBooksController> _logger;
 
     public ClubBooksController(
         BlogDbContext context,
         UserManager<ApplicationUser> userManager,
         IImageStorage imageStorage,
+        IImageUploadRateLimiter imageUploadRateLimiter,
         ILogger<ClubBooksController> logger)
     {
         _context = context;
         _userManager = userManager;
         _imageStorage = imageStorage;
+        _imageUploadRateLimiter = imageUploadRateLimiter;
         _logger = logger;
     }
 
@@ -78,6 +81,14 @@ public class ClubBooksController : Controller
         StoredImage? uploadedImage = null;
         if (model.CoverImage is not null)
         {
+            using var lease = _imageUploadRateLimiter.Acquire(HttpContext);
+            if (!lease.IsAcquired)
+            {
+                return StatusCode(
+                    StatusCodes.Status429TooManyRequests,
+                    "Too many image uploads. Please try again later.");
+            }
+
             uploadedImage = await UploadCoverAsync(
                 model.CoverImage,
                 imageValidation!,
@@ -185,6 +196,14 @@ public class ClubBooksController : Controller
         StoredImage? uploadedImage = null;
         if (model.CoverImage is not null)
         {
+            using var lease = _imageUploadRateLimiter.Acquire(HttpContext);
+            if (!lease.IsAcquired)
+            {
+                return StatusCode(
+                    StatusCodes.Status429TooManyRequests,
+                    "Too many image uploads. Please try again later.");
+            }
+
             uploadedImage = await UploadCoverAsync(
                 model.CoverImage,
                 imageValidation!,
@@ -523,7 +542,10 @@ public class ClubBooksController : Controller
             .ToListAsync();
 
         var userId = _userManager.GetUserId(User);
-        var isAdmin = User.IsInRole(RoleNames.Admin);
+        var currentUser = await _userManager.GetUserAsync(User);
+        var isVerified = currentUser?.EmailConfirmed == true;
+        var isAdmin = isVerified && User.IsInRole(RoleNames.Admin);
+        var writeUserId = isVerified ? userId : null;
         var isMember = !string.IsNullOrWhiteSpace(userId) &&
             (book.Club.Memberships?.Any(membership =>
                 membership.UserId == userId) ?? false);
@@ -541,9 +563,9 @@ public class ClubBooksController : Controller
                     book.DiscussionPosts.Where(post =>
                         post.BookDiscussionThreadId is null),
                     book.Club.Slug,
-                    userId,
+                    writeUserId,
                     isAdmin,
-                    isAdmin || isMember,
+                    isVerified && (isAdmin || isMember),
                     normalizedSort)
             }
         };
@@ -559,9 +581,9 @@ public class ClubBooksController : Controller
                     book.DiscussionPosts.Where(post =>
                         post.BookDiscussionThreadId == thread.Id),
                     book.Club.Slug,
-                    userId,
+                    writeUserId,
                     isAdmin,
-                    isAdmin || isMember,
+                    isVerified && (isAdmin || isMember),
                     normalizedSort)
             }));
         var activeThreadId = requestedThreadId is int requested &&
@@ -581,9 +603,10 @@ public class ClubBooksController : Controller
             StartDate = book.StartDate,
             EndDate = book.EndDate,
             Status = ClubBookTimeline.Status(book, currentBook, now),
-            CanPost = isAdmin || isMember,
+            CanPost = isVerified && (isAdmin || isMember),
             IsAdmin = isAdmin,
             IsAuthenticated = User.Identity?.IsAuthenticated == true,
+            IsVerified = isVerified,
             DiscussionSort = normalizedSort,
             ActiveThreadId = activeThreadId,
             DiscussionThreads = threadItems

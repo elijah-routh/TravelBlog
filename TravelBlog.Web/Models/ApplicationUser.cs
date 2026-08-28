@@ -9,6 +9,10 @@ public class ApplicationUser : IdentityUser
     [StringLength(100)]
     public string DisplayName { get; set; } = string.Empty;
 
+    public DateTime? LastConfirmationEmailSentAt { get; set; }
+
+    public DateTime? LastPasswordResetEmailSentAt { get; set; }
+
     public ICollection<Post> Posts { get; set; } = [];
 
     public ICollection<BookClub> CreatedBookClubs { get; set; } = [];

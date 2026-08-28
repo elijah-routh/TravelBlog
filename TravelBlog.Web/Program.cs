@@ -1,8 +1,12 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using TravelBlog.Web.Authorization;
 using TravelBlog.Web.Data;
 using TravelBlog.Web.Models;
@@ -10,8 +14,33 @@ using TravelBlog.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+var dataProtection = builder.Services
+    .AddDataProtection()
+    .SetApplicationName("TravelBlog");
+var dataProtectionKeysPath =
+    builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    Directory.CreateDirectory(dataProtectionKeysPath);
+    dataProtection.PersistKeysToFileSystem(
+        new DirectoryInfo(dataProtectionKeysPath));
+}
+
+builder.Services.AddControllersWithViews(options =>
+    options.Filters.Add<VerifiedMutationFilter>());
 builder.Services.AddRazorPages();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IAccountEmailService, AccountEmailService>();
+builder.Services.AddScoped<
+    IAccountAnonymizationService,
+    AccountAnonymizationService>();
+builder.Services
+    .AddOptions<ApplicationRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection(
+        ApplicationRateLimitOptions.SectionName));
+builder.Services.AddSingleton<
+    IImageUploadRateLimiter,
+    ImageUploadRateLimiter>();
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {
@@ -74,6 +103,13 @@ if (!builder.Environment.IsEnvironment("Testing"))
         return new AmazonS3Client(credentials, configuration);
     });
     builder.Services.AddSingleton<IImageStorage, S3ImageStorage>();
+
+    builder.Services
+        .AddOptions<EmailOptions>()
+        .Bind(builder.Configuration.GetSection(EmailOptions.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+    builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 }
 
 builder.Services
@@ -81,6 +117,10 @@ builder.Services
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.User.RequireUniqueEmail = true;
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan =
+            TimeSpan.FromMinutes(15);
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<BlogDbContext>();
@@ -97,11 +137,90 @@ builder.Services.AddAuthorization(options =>
         PolicyNames.PostOwnerOrAdmin,
         policy => policy.AddRequirements(
             new PostOwnerOrAdminRequirement()));
+    options.AddPolicy(
+        PolicyNames.VerifiedEmail,
+        policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new VerifiedEmailRequirement()));
+    options.AddPolicy(
+        PolicyNames.BootstrapAdmin,
+        policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new BootstrapAdminRequirement()));
 });
 
 builder.Services.AddScoped<
     IAuthorizationHandler,
     PostOwnerOrAdminHandler>();
+builder.Services.AddScoped<
+    IAuthorizationHandler,
+    VerifiedEmailHandler>();
+builder.Services.AddSingleton<
+    IAuthorizationHandler,
+    BootstrapAdminHandler>();
+builder.Services.AddScoped<VerifiedMutationFilter>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType =
+            "text/plain; charset=utf-8";
+        await context.HttpContext.Response.WriteAsync(
+            "Too many requests. Please try again later.",
+            cancellationToken);
+    };
+    var limits = new ApplicationRateLimitOptions();
+    builder.Configuration.GetSection(
+        ApplicationRateLimitOptions.SectionName).Bind(limits);
+    options.AddPolicy(RateLimitPolicyNames.Registration, context =>
+        !HttpMethods.IsPost(context.Request.Method)
+            ? RateLimitPartition.GetNoLimiter("registration-read")
+            : RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromMinutes(15),
+                QueueLimit = 0
+            }));
+    options.AddPolicy(RateLimitPolicyNames.Email, context =>
+        !HttpMethods.IsPost(context.Request.Method)
+            ? RateLimitPartition.GetNoLimiter("email-read")
+            : RateLimitPartition.GetFixedWindowLimiter(
+            $"{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}:" +
+            context.Request.Path.Value?.ToLowerInvariant(),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(15),
+                QueueLimit = 0
+            }));
+    options.AddPolicy(RateLimitPolicyNames.Login, context =>
+        !HttpMethods.IsPost(context.Request.Method)
+            ? RateLimitPartition.GetNoLimiter("login-read")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = limits.LoginPermitLimit,
+                    Window = TimeSpan.FromMinutes(15),
+                    QueueLimit = 0
+                }));
+    options.AddPolicy(RateLimitPolicyNames.Comments, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirstValue(ClaimTypes.NameIdentifier) is
+                { Length: > 0 } userId
+                ? $"user:{userId}"
+                : $"ip:{context.Connection.RemoteIpAddress}",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = limits.CommentPermitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 var app = builder.Build();
 
@@ -128,6 +247,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllerRoute(

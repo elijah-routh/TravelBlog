@@ -1,0 +1,18 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.ConfirmEmailModel
+@{
+    ViewData["Title"] = "Confirm email";
+}
+<section class="content-section"><div class="container"><div class="row justify-content-center"><div class="col-md-7 col-lg-5">
+    <h1>Confirm email</h1>
+    @if (Model.Succeeded)
+    {
+        <p>Your email has been confirmed. You can now log in.</p>
+        <a asp-page="./Login" class="btn btn-primary">Log in</a>
+    }
+    else
+    {
+        <p class="text-danger">This confirmation link is invalid or has expired.</p>
+        <a asp-page="./ResendEmailConfirmation">Request a new confirmation email</a>
+    }
+</div></div></div></section>

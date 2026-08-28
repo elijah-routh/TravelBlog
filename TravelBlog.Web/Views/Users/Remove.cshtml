@@ -1,0 +1,30 @@
+@model RemoveUserViewModel
+@{
+    ViewData["Title"] = "Remove account";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="card border-danger mx-auto account-remove-card">
+            <div class="card-body">
+                <h1 class="h3 card-title">Remove account</h1>
+                <p>
+                    Remove <strong>@Model.DisplayName</strong>? The account and
+                    personal login information will be deleted. Existing content
+                    will remain and show “Deleted user” as its author.
+                </p>
+                <p class="text-danger">
+                    This action cannot be undone.
+                </p>
+                <form asp-action="Remove" asp-route-id="@Model.Id" method="post">
+                    <button type="submit" class="btn btn-danger">
+                        Remove and anonymize account
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>

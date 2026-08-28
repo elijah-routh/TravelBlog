@@ -69,6 +69,72 @@ public sealed class BookClubTests
     }
 
     [Fact]
+    public async Task DetailsMemberCountDisclosesSortedDisplayNamesOnly()
+    {
+        var admin = await CreateUserAsync("Member Host", isAdmin: true);
+        var beta = await CreateUserAsync("beta Member");
+        var alpha = await CreateUserAsync("Alpha Member");
+        var club = await CreateClubAsync(admin, "member-list");
+        await AddMembershipAsync(club, beta);
+        await AddMembershipAsync(club, alpha);
+        using var client = CreateClient();
+
+        var html = await client.GetStringAsync($"/BookClubs/{club.Slug}");
+
+        Assert.Contains("<details class=\"club-member-disclosure", html);
+        Assert.Matches(
+            "<summary class=\"club-member-summary\">\\s*3\\s+members\\s*</summary>",
+            html);
+        Assert.Contains("aria-labelledby=\"club-members-heading\"", html);
+        var alphaIndex = html.IndexOf(alpha.DisplayName, StringComparison.Ordinal);
+        var betaIndex = html.IndexOf(beta.DisplayName, StringComparison.Ordinal);
+        var hostIndex = html.IndexOf(admin.DisplayName, StringComparison.Ordinal);
+        Assert.True(alphaIndex >= 0);
+        Assert.True(alphaIndex < betaIndex);
+        Assert.True(betaIndex < hostIndex);
+        Assert.DoesNotContain(alpha.Email!, html);
+        Assert.DoesNotContain(beta.Email!, html);
+        Assert.DoesNotContain(admin.Email!, html);
+    }
+
+    [Fact]
+    public async Task JoinPromptDistinguishesAnonymousUnverifiedAndVerified()
+    {
+        var admin = await CreateUserAsync("Join Prompt Admin", isAdmin: true);
+        var unverified = await CreateUserAsync(
+            "Unverified Joiner",
+            emailConfirmed: false);
+        var verified = await CreateUserAsync("Verified Joiner");
+        var club = await CreateClubAsync(admin, "join-prompt");
+        using var anonymousClient = CreateClient();
+        using var unverifiedClient = await LoginAsync(unverified.Email!);
+        using var verifiedClient = await LoginAsync(verified.Email!);
+
+        var anonymousHtml = await anonymousClient.GetStringAsync(
+            $"/BookClubs/{club.Slug}");
+        var unverifiedHtml = await unverifiedClient.GetStringAsync(
+            $"/BookClubs/{club.Slug}");
+        var verifiedHtml = await verifiedClient.GetStringAsync(
+            $"/BookClubs/{club.Slug}");
+
+        Assert.Contains("Log in to join", anonymousHtml);
+        Assert.Contains(
+            "Verify your email before joining this club",
+            unverifiedHtml);
+        Assert.Contains(
+            "href=\"/Identity/Account/Manage/Email\"",
+            unverifiedHtml);
+        Assert.DoesNotContain("Join Club", unverifiedHtml);
+        Assert.DoesNotContain(
+            $"action=\"/BookClubs/{club.Slug}/Join\"",
+            unverifiedHtml);
+        Assert.Contains("Join Club", verifiedHtml);
+        Assert.Contains(
+            $"action=\"/BookClubs/{club.Slug}/Join\"",
+            verifiedHtml);
+    }
+
+    [Fact]
     public async Task AnonymousDiscussionPostRedirectsToLogin()
     {
         var admin = await CreateUserAsync("Club Anon Admin", isAdmin: true);
@@ -789,7 +855,8 @@ public sealed class BookClubTests
 
     private async Task<ApplicationUser> CreateUserAsync(
         string displayName,
-        bool isAdmin = false)
+        bool isAdmin = false,
+        bool emailConfirmed = true)
     {
         ApplicationUser? created = null;
         await WithServicesAsync(async services =>
@@ -800,7 +867,7 @@ public sealed class BookClubTests
             {
                 DisplayName = displayName,
                 UserName = UniqueEmail("user"),
-                EmailConfirmed = true
+                EmailConfirmed = emailConfirmed
             };
             created.Email = created.UserName;
             Assert.True(

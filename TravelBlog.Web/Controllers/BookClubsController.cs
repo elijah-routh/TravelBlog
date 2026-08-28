@@ -33,6 +33,8 @@ public class BookClubsController : Controller
     [HttpGet("Index")]
     public async Task<IActionResult> Index()
     {
+        var currentUser = await _userManager.GetUserAsync(User);
+        var canWrite = currentUser?.EmailConfirmed == true;
         var clubs = await _context.BookClubs
             .AsNoTracking()
             .Include(club => club.Memberships)
@@ -43,7 +45,7 @@ public class BookClubsController : Controller
         var now = DateTime.UtcNow;
         var viewModel = new BookClubIndexViewModel
         {
-            IsAdmin = User.IsInRole(RoleNames.Admin),
+            IsAdmin = canWrite && User.IsInRole(RoleNames.Admin),
             Clubs = clubs.Select(club =>
             {
                 var currentBook =
@@ -543,9 +545,19 @@ public class BookClubsController : Controller
         }
 
         var userId = _userManager.GetUserId(User);
-        var isAdmin = User.IsInRole(RoleNames.Admin);
+        var currentUser = await _userManager.GetUserAsync(User);
+        var isVerified = currentUser?.EmailConfirmed == true;
+        var isAdmin = isVerified && User.IsInRole(RoleNames.Admin);
         var isMember = !string.IsNullOrWhiteSpace(userId) &&
             club.Memberships.Any(membership => membership.UserId == userId);
+        var memberDisplayNames = (await _context.BookClubMemberships
+                .AsNoTracking()
+                .Where(membership => membership.ClubId == club.Id)
+                .Select(membership => membership.User.DisplayName)
+                .ToListAsync())
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(name => name, StringComparer.Ordinal)
+            .ToList();
         var now = DateTime.UtcNow;
         var normalizedSort = DiscussionSortOrder.Normalize(discussionSort);
         var currentBook = ClubBookTimeline.CurrentBook(club.Books, now);
@@ -571,10 +583,12 @@ public class BookClubsController : Controller
             Name = club.Name,
             Slug = club.Slug,
             Description = club.Description,
-            MemberCount = club.Memberships.Count,
+            MemberCount = memberDisplayNames.Count,
+            MemberDisplayNames = memberDisplayNames,
             IsMember = isMember,
-            CanPost = isAdmin || isMember,
+            CanPost = isVerified && (isAdmin || isMember),
             IsAdmin = isAdmin,
+            IsVerified = isVerified,
             ShowTimeline = showTimeline,
             DiscussionSort = normalizedSort,
             CurrentBook = bookItems.FirstOrDefault(book =>

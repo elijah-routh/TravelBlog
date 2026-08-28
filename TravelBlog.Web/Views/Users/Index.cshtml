@@ -13,20 +13,91 @@
         @foreach (var account in Model)
         {
             <tr>
-                <td>@account.DisplayName</td><td>@account.Email</td>
-                <td>@(account.IsAdmin ? "Admin" : "Author")</td>
+                <td>
+                    @account.DisplayName
+                    @if (account.IsLockedOut)
+                    {
+                        if (account.CanUnlock)
+                        {
+                            <form
+                                asp-action="Unlock"
+                                asp-route-id="@account.Id"
+                                method="post"
+                                class="d-inline">
+                                <button
+                                    type="submit"
+                                    class="btn btn-link link-danger p-0 align-baseline"
+                                    aria-label="Unlock @account.DisplayName's account"
+                                    title="Unlock account">
+                                    <svg
+                                        aria-hidden="true"
+                                        focusable="false"
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 16 16"
+                                        fill="currentColor">
+                                        <path d="M5.5 6V4.5a2.5 2.5 0 0 1 5 0h1a3.5 3.5 0 0 0-7 0V6H3.75A1.75 1.75 0 0 0 2 7.75v5.5C2 14.22 2.78 15 3.75 15h8.5c.97 0 1.75-.78 1.75-1.75v-5.5C14 6.78 13.22 6 12.25 6H5.5Z" />
+                                    </svg>
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span
+                                class="text-danger"
+                                role="img"
+                                aria-label="Account locked"
+                                title="Account locked">
+                                <svg
+                                    aria-hidden="true"
+                                    focusable="false"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 16 16"
+                                    fill="currentColor">
+                                    <path d="M5.5 6V4.5a2.5 2.5 0 0 1 5 0h1a3.5 3.5 0 0 0-7 0V6H3.75A1.75 1.75 0 0 0 2 7.75v5.5C2 14.22 2.78 15 3.75 15h8.5c.97 0 1.75-.78 1.75-1.75v-5.5C14 6.78 13.22 6 12.25 6H5.5Z" />
+                                </svg>
+                            </span>
+                        }
+                    }
+                </td>
+                <td>@account.Email</td>
+                <td>
+                    @(account.IsBootstrapAdmin
+                        ? "Admin (star)"
+                        : account.IsAdmin ? "Admin" : "Author")
+                    @if (!account.IsVerified)
+                    {
+                        <span class="badge bg-warning text-dark">Unverified</span>
+                    }
+                </td>
                 <td class="text-end">
-                    @if (account.IsAdmin)
+                    @if (account.IsAdmin && !account.IsBootstrapAdmin)
                     {
                         <form asp-action="Demote" asp-route-id="@account.Id" method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Demote</button>
                         </form>
                     }
-                    else
+                    else if (!account.IsAdmin && account.IsVerified)
                     {
                         <form asp-action="Promote" asp-route-id="@account.Id" method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-primary">Promote to Admin</button>
                         </form>
+                    }
+                    else if (!account.IsVerified)
+                    {
+                        <span class="text-muted">Verification required</span>
+                    }
+                    @if (account.CanRemove)
+                    {
+                        <a
+                            asp-action="Remove"
+                            asp-route-id="@account.Id"
+                            class="btn btn-sm btn-outline-danger rounded-circle account-remove-button ms-1"
+                            aria-label="Remove @account.DisplayName's account"
+                            title="Remove account">
+                            <span aria-hidden="true">&times;</span>
+                        </a>
                     }
                 </td>
             </tr>

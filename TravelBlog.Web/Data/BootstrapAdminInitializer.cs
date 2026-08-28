@@ -10,6 +10,19 @@ public static class BootstrapAdminInitializer
         IServiceProvider services,
         IConfiguration configuration)
     {
+        var userManager =
+            services.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var admin = await userManager.FindByIdAsync(
+            BootstrapAdminConstants.UserId);
+
+        if (admin is not null &&
+            await userManager.HasPasswordAsync(admin) &&
+            await userManager.IsInRoleAsync(admin, RoleNames.Admin))
+        {
+            return;
+        }
+
         var email = RequireSetting(configuration, "BootstrapAdmin:Email");
         var password = RequireSetting(
             configuration,
@@ -18,10 +31,22 @@ public static class BootstrapAdminInitializer
             configuration,
             "BootstrapAdmin:DisplayName");
 
-        var userManager =
-            services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager =
             services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        var deletedUser = await userManager.FindByIdAsync(
+            DeletedUserConstants.UserId);
+        if (deletedUser is null ||
+            deletedUser.DisplayName != DeletedUserConstants.DisplayName ||
+            deletedUser.Email is not null ||
+            deletedUser.UserName is not null ||
+            await userManager.HasPasswordAsync(deletedUser) ||
+            (await userManager.GetRolesAsync(deletedUser)).Count != 0)
+        {
+            throw new InvalidOperationException(
+                "The deleted-user sentinel is missing or invalid. " +
+                "Apply the latest database migration before startup.");
+        }
 
         if (!await roleManager.RoleExistsAsync(RoleNames.Admin))
         {
@@ -30,9 +55,6 @@ public static class BootstrapAdminInitializer
                     new IdentityRole(RoleNames.Admin)),
                 "create the Admin role");
         }
-
-        var admin = await userManager.FindByIdAsync(
-            BootstrapAdminConstants.UserId);
 
         if (admin is null)
         {

@@ -11,10 +11,15 @@
             @for (var i = 0; i < 4; i++)
             {
                 <img
-                    src="~/images/GiantLampoonBannerMerge.png"
+                    src="~/images/GiantLampoonBannerFinal.jpg"
                     alt="" />
             }
         </div>
+
+        <img
+            src="~/images/GiantLampoonBanner.png"
+            class="hero-static-image"
+            alt="" />
     </div>
 
     <div class="hero-content">
@@ -35,6 +40,15 @@
             Read the Latest
         </a>
     </div>
+
+    <button
+        type="button"
+        class="hero-motion-toggle"
+        aria-pressed="false"
+        title="Pause banner animation">
+        <span class="hero-motion-toggle-icon" aria-hidden="true">⏸</span>
+        <span class="hero-motion-toggle-label">Pause banner</span>
+    </button>
 </header>
 
 <!-- Category rows -->
@@ -249,6 +263,39 @@
                         });
                     });
                 });
+
+            const hero = document.querySelector(".hero");
+            const motionToggle = document.querySelector(
+                ".hero-motion-toggle"
+            );
+
+            motionToggle?.addEventListener("click", function () {
+                const isStatic = hero?.classList.toggle("hero-static");
+                const icon = motionToggle.querySelector(
+                    ".hero-motion-toggle-icon"
+                );
+                const label = motionToggle.querySelector(
+                    ".hero-motion-toggle-label"
+                );
+
+                motionToggle.setAttribute(
+                    "aria-pressed",
+                    String(Boolean(isStatic))
+                );
+                motionToggle.title = isStatic
+                    ? "Play banner animation"
+                    : "Pause banner animation";
+
+                if (icon) {
+                    icon.textContent = isStatic ? "▶" : "⏸";
+                }
+
+                if (label) {
+                    label.textContent = isStatic
+                        ? "Play banner"
+                        : "Pause banner";
+                }
+            });
         });
     </script>
 }

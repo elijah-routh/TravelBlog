@@ -71,9 +71,7 @@
                         Back to Posts
                     </a>
 
-                    @if (User.Identity?.IsAuthenticated == true &&
-                        (User.IsInRole(RoleNames.Admin) ||
-                         Model.Post.AuthorId == UserManager.GetUserId(User)))
+                    @if (Model.CanManagePost)
                     {
                         <a
                             asp-controller="Posts"
@@ -141,6 +139,18 @@
                                 Post Comment
                             </button>
                         </form>
+                    }
+                    else if (Model.IsAuthenticated)
+                    {
+                        <div class="alert alert-warning mb-0" role="status">
+                            Verify your email before commenting on this post.
+                            <a
+                                asp-area="Identity"
+                                asp-page="/Account/Manage/Email"
+                                class="alert-link">
+                                Review email verification
+                            </a>.
+                        </div>
                     }
                     else
                     {

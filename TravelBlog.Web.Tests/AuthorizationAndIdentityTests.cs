@@ -38,6 +38,39 @@ public sealed class AuthorizationAndIdentityTests
     }
 
     [Fact]
+    public async Task UnverifiedCreateShowsPromptButPostRemainsForbidden()
+    {
+        var user = await CreateUserAsync(
+            "Unverified Creator",
+            emailConfirmed: false);
+        using var client = await LoginAsync(user.Email!);
+
+        var getResponse = await client.GetAsync("/Posts/Create");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        var html = await getResponse.Content.ReadAsStringAsync();
+        Assert.Contains(
+            "Verify your email before creating a post",
+            html);
+        Assert.Contains(
+            "href=\"/Identity/Account/Manage/Email\"",
+            html);
+        Assert.DoesNotContain("Save Post", html);
+        Assert.DoesNotContain("enctype=\"multipart/form-data\"", html);
+
+        var token = await GetAntiforgeryTokenAsync(
+            client,
+            "/Identity/Account/Manage/Email");
+        var postResponse = await client.PostAsync(
+            "/Posts/Create",
+            Form(token,
+                ("Title", "Blocked post"),
+                ("Slug", $"blocked-{Guid.NewGuid():N}"),
+                ("Content", "Blocked"),
+                ("Category", "1")));
+        AssertAccessDenied(postResponse);
+    }
+
+    [Fact]
     public async Task RegistrationCapturesDisplayName()
     {
         using var client = CreateClient();
@@ -137,6 +170,58 @@ public sealed class AuthorizationAndIdentityTests
                 .Posts.SingleAsync(post => post.Slug == slug);
             Assert.Equal(author.Id, post.AuthorId);
             Assert.NotEqual(other.Id, post.AuthorId);
+        });
+    }
+
+    [Fact]
+    public async Task PostContentLengthEnforcesFiftyThousandBoundary()
+    {
+        var author = await CreateUserAsync("Content Boundary Author");
+        using var client = await LoginAsync(author.Email!);
+        var acceptedSlug = $"accepted-{Guid.NewGuid():N}";
+        var rejectedSlug = $"rejected-{Guid.NewGuid():N}";
+        var createHtml = await client.GetStringAsync("/Posts/Create");
+        Assert.Contains("maxlength=\"50000\"", createHtml);
+        var acceptedToken = await GetAntiforgeryTokenAsync(
+            client,
+            "/Posts/Create");
+
+        var accepted = await client.PostAsync(
+            "/Posts/Create",
+            Form(acceptedToken,
+                ("Title", "Accepted boundary"),
+                ("Slug", acceptedSlug),
+                ("Content", new string(
+                    'a',
+                    PostContentLimits.MaximumLength)),
+                ("Category", "1")));
+        Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
+
+        var rejectedToken = await GetAntiforgeryTokenAsync(
+            client,
+            "/Posts/Create");
+        var rejected = await client.PostAsync(
+            "/Posts/Create",
+            Form(rejectedToken,
+                ("Title", "Rejected boundary"),
+                ("Slug", rejectedSlug),
+                ("Content", new string(
+                    'b',
+                    PostContentLimits.MaximumLength + 1)),
+                ("Category", "1")));
+        Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+        Assert.Contains(
+            PostContentLimits.MaximumLengthError,
+            await rejected.Content.ReadAsStringAsync());
+
+        await WithServicesAsync(async services =>
+        {
+            var context = services.GetRequiredService<BlogDbContext>();
+            var stored = await context.Posts.SingleAsync(
+                post => post.Slug == acceptedSlug);
+            Assert.Equal(PostContentLimits.MaximumLength, stored.Content.Length);
+            Assert.False(await context.Posts.AnyAsync(
+                post => post.Slug == rejectedSlug));
         });
     }
 
@@ -241,6 +326,32 @@ public sealed class AuthorizationAndIdentityTests
     }
 
     [Fact]
+    public async Task UnverifiedUserIsBlockedAcrossMutationControllerFamilies()
+    {
+        var user = await CreateUserAsync(
+            "Unverified Admin",
+            isAdmin: true,
+            emailConfirmed: false);
+        using var client = await LoginAsync(user.Email!);
+        var token = await GetAntiforgeryTokenAsync(client, "/Users");
+        var requests = new[]
+        {
+            ("/Posts/Create", Form(token, ("Title", "Blocked"))),
+            ("/BookClubs/missing/Join", Form(token)),
+            ("/BookClubs/missing/books/Create", Form(token)),
+            ("/BookClubs/missing/discussions/1/Delete", Form(token)),
+            ("/BookClubs/missing/polls", Form(token)),
+            ("/Users/Promote", Form(token, ("id", user.Id)))
+        };
+
+        foreach (var (path, content) in requests)
+        {
+            using var response = await client.PostAsync(path, content);
+            AssertAccessDenied(response);
+        }
+    }
+
+    [Fact]
     public async Task FinalAdministratorCannotBeDemoted()
     {
         await RemoveAllAdminsAsync();
@@ -264,10 +375,69 @@ public sealed class AuthorizationAndIdentityTests
     }
 
     [Fact]
-    public async Task BootstrapInitializerConfiguresPlaceholderWithoutReplacingPassword()
+    public async Task BootstrapAdministratorCannotBeDemotedAndHasNoDemoteAction()
+    {
+        var email = UniqueEmail("fixed-bootstrap");
+        await WithServicesAsync(async services =>
+        {
+            var manager =
+                services.GetRequiredService<UserManager<ApplicationUser>>();
+            var existing = await manager.FindByIdAsync(
+                BootstrapAdminConstants.UserId);
+            if (existing is not null)
+            {
+                Assert.True((await manager.DeleteAsync(existing)).Succeeded);
+            }
+            var placeholder = new ApplicationUser
+            {
+                Id = BootstrapAdminConstants.UserId,
+                DisplayName = "Bootstrap Administrator",
+                UserName = "bootstrap-admin@invalid.local",
+                Email = "bootstrap-admin@invalid.local",
+                EmailConfirmed = true
+            };
+            Assert.True((await manager.CreateAsync(placeholder)).Succeeded);
+            await BootstrapAdminInitializer.InitializeAsync(
+                services,
+                BootstrapConfiguration(
+                    email,
+                    Password,
+                    "Fixed Bootstrap Admin"));
+        });
+        await CreateUserAsync("Second Admin", isAdmin: true);
+        using var client = await LoginAsync(email);
+        var usersHtml = await client.GetStringAsync("/Users");
+        var token = await GetAntiforgeryTokenAsync(client, "/Users");
+
+        var response = await client.PostAsync(
+            "/Users/Demote",
+            Form(token, ("id", BootstrapAdminConstants.UserId)));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var rowStart = usersHtml.IndexOf(
+            "Fixed Bootstrap Admin",
+            StringComparison.Ordinal);
+        Assert.True(rowStart >= 0);
+        var rowEnd = usersHtml.IndexOf("</tr>", rowStart, StringComparison.Ordinal);
+        Assert.True(rowEnd > rowStart);
+        Assert.DoesNotContain(
+            "Demote",
+            usersHtml[rowStart..rowEnd]);
+        await WithServicesAsync(async services =>
+        {
+            var manager =
+                services.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await manager.FindByIdAsync(
+                BootstrapAdminConstants.UserId);
+            Assert.NotNull(user);
+            Assert.True(await manager.IsInRoleAsync(user, RoleNames.Admin));
+        });
+    }
+
+    [Fact]
+    public async Task BootstrapInitializerConfiguresPlaceholderOnlyOnce()
     {
         const string originalPassword = "Original-pass1!";
-        const string replacementPassword = "Replacement-pass1!";
         var email = UniqueEmail("bootstrap");
 
         await WithServicesAsync(async services =>
@@ -312,18 +482,12 @@ public sealed class AuthorizationAndIdentityTests
 
             await BootstrapAdminInitializer.InitializeAsync(
                 services,
-                BootstrapConfiguration(
-                    email,
-                    replacementPassword,
-                    "Renamed Admin"));
+                new ConfigurationBuilder().Build());
 
             Assert.True(await userManager.CheckPasswordAsync(
                 configured,
                 originalPassword));
-            Assert.False(await userManager.CheckPasswordAsync(
-                configured,
-                replacementPassword));
-            Assert.Equal("Renamed Admin", configured.DisplayName);
+            Assert.Equal("Configured Admin", configured.DisplayName);
         });
     }
 
@@ -353,7 +517,8 @@ public sealed class AuthorizationAndIdentityTests
 
     private async Task<ApplicationUser> CreateUserAsync(
         string displayName,
-        bool isAdmin = false)
+        bool isAdmin = false,
+        bool emailConfirmed = true)
     {
         ApplicationUser? created = null;
         await WithServicesAsync(async services =>
@@ -364,7 +529,7 @@ public sealed class AuthorizationAndIdentityTests
             {
                 DisplayName = displayName,
                 UserName = UniqueEmail("user"),
-                EmailConfirmed = true
+                EmailConfirmed = emailConfirmed
             };
             created.Email = created.UserName;
             Assert.True(

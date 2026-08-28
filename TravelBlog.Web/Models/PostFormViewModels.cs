@@ -27,6 +27,9 @@ public abstract class PostFormViewModel
     public string? Summary { get; set; }
 
     [Required(ErrorMessage = "Post content is required.")]
+    [StringLength(
+        PostContentLimits.MaximumLength,
+        ErrorMessage = PostContentLimits.MaximumLengthError)]
     public string Content { get; set; } = string.Empty;
 
     [Display(Name = "Featured image")]

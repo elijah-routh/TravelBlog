@@ -1,14 +1,22 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.WebUtilities;
+using TravelBlog.Web.Authorization;
 using TravelBlog.Web.Models;
+using TravelBlog.Web.Services;
 
 namespace TravelBlog.Web.Areas.Identity.Pages.Account.Manage;
 
 [Authorize]
-public class IndexModel(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager) : PageModel
+public class IndexModel(
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
+    IAccountEmailService accountEmailService) : PageModel
 {
     [BindProperty] public ProfileInput Input { get; set; } = new();
     [TempData] public string? StatusMessage { get; set; }
@@ -28,8 +36,14 @@ public class IndexModel(UserManager<ApplicationUser> userManager, SignInManager<
         if (!ModelState.IsValid) return Page();
 
         user.DisplayName = Input.DisplayName.Trim();
-        if (!string.Equals(user.Email, Input.Email, StringComparison.OrdinalIgnoreCase))
+        var emailChanged = !string.Equals(
+            user.Email,
+            Input.Email,
+            StringComparison.OrdinalIgnoreCase);
+        if (emailChanged)
         {
+            user.EmailConfirmed = false;
+            user.LastConfirmationEmailSentAt = null;
             var emailResult = await userManager.SetEmailAsync(user, Input.Email.Trim());
             var nameResult = emailResult.Succeeded
                 ? await userManager.SetUserNameAsync(user, Input.Email.Trim())
@@ -48,7 +62,33 @@ public class IndexModel(UserManager<ApplicationUser> userManager, SignInManager<
             return Page();
         }
         await signInManager.RefreshSignInAsync(user);
-        StatusMessage = "Your profile has been updated.";
+        if (emailChanged)
+        {
+            var token = await userManager
+                .GenerateEmailConfirmationTokenAsync(user);
+            var code = WebEncoders.Base64UrlEncode(
+                Encoding.UTF8.GetBytes(token));
+            var callbackUrl = Url.Page(
+                "/Account/ConfirmEmail",
+                pageHandler: null,
+                values: new
+                {
+                    area = "Identity",
+                    userId = user.Id,
+                    code
+                },
+                protocol: Request.Scheme)!;
+            await accountEmailService.SendConfirmationAsync(
+                user,
+                callbackUrl,
+                HttpContext.RequestAborted);
+            StatusMessage =
+                "Your profile was updated. Confirm your new email to write content.";
+        }
+        else
+        {
+            StatusMessage = "Your profile has been updated.";
+        }
         return RedirectToPage();
     }
 
@@ -57,6 +97,68 @@ public class IndexModel(UserManager<ApplicationUser> userManager, SignInManager<
         [Required, StringLength(100), Display(Name = "Display name")]
         public string DisplayName { get; set; } = string.Empty;
         [Required, EmailAddress] public string Email { get; set; } = string.Empty;
+    }
+}
+
+[Authorize]
+[EnableRateLimiting(RateLimitPolicyNames.Email)]
+public class EmailModel(
+    UserManager<ApplicationUser> userManager,
+    IAccountEmailService accountEmailService) : PageModel
+{
+    public string Email { get; private set; } = string.Empty;
+    public bool IsVerified { get; private set; }
+    [TempData] public string? StatusMessage { get; set; }
+
+    public async Task<IActionResult> OnGetAsync() =>
+        await LoadAsync() ? Page() : NotFound();
+
+    public async Task<IActionResult> OnPostSendVerificationAsync()
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            var token = await userManager
+                .GenerateEmailConfirmationTokenAsync(user);
+            var code = WebEncoders.Base64UrlEncode(
+                Encoding.UTF8.GetBytes(token));
+            var callbackUrl = Url.Page(
+                "/Account/ConfirmEmail",
+                pageHandler: null,
+                values: new
+                {
+                    area = "Identity",
+                    userId = user.Id,
+                    code
+                },
+                protocol: Request.Scheme)!;
+            await accountEmailService.SendConfirmationAsync(
+                user,
+                callbackUrl,
+                HttpContext.RequestAborted);
+        }
+
+        StatusMessage =
+            "If your email needs verification, a confirmation message has been sent.";
+        return RedirectToPage();
+    }
+
+    private async Task<bool> LoadAsync()
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return false;
+        }
+
+        Email = user.Email ?? string.Empty;
+        IsVerified = user.EmailConfirmed;
+        return true;
     }
 }
 

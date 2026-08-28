@@ -12,10 +12,32 @@
             <div>
                 <p class="text-uppercase small text-muted mb-1">Book Club</p>
                 <h1 class="mb-2">@Model.Name</h1>
-                <p class="text-muted mb-0">
-                    @Model.MemberCount
-                    @(Model.MemberCount == 1 ? "member" : "members")
-                </p>
+                <details class="club-member-disclosure text-muted">
+                    <summary class="club-member-summary">
+                        @Model.MemberCount
+                        @(Model.MemberCount == 1 ? "member" : "members")
+                    </summary>
+                    <div class="club-member-list card card-body mt-2">
+                        <h2 class="visually-hidden" id="club-members-heading">
+                            @Model.Name members
+                        </h2>
+                        @if (Model.MemberDisplayNames.Count == 0)
+                        {
+                            <p class="mb-0">No current members.</p>
+                        }
+                        else
+                        {
+                            <ul
+                                class="mb-0 ps-3"
+                                aria-labelledby="club-members-heading">
+                                @foreach (var displayName in Model.MemberDisplayNames)
+                                {
+                                    <li>@displayName</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </details>
             </div>
 
             <div class="d-flex flex-wrap gap-2">
@@ -48,7 +70,7 @@
                     </a>
                 }
 
-                @if (User.Identity?.IsAuthenticated == true)
+                @if (User.Identity?.IsAuthenticated == true && Model.IsVerified)
                 {
                     if (Model.IsMember)
                     {
@@ -75,7 +97,7 @@
                         </form>
                     }
                 }
-                else
+                else if (User.Identity?.IsAuthenticated != true)
                 {
                     <a
                         asp-area="Identity"
@@ -84,6 +106,25 @@
                         class="btn btn-primary">
                         Log in to join
                     </a>
+                }
+                else
+                {
+                    <div class="alert alert-warning py-2 mb-0" role="status">
+                        @if (Model.IsMember)
+                        {
+                            <text>Verify your email before participating in this club.</text>
+                        }
+                        else
+                        {
+                            <text>Verify your email before joining this club.</text>
+                        }
+                        <a
+                            asp-area="Identity"
+                            asp-page="/Account/Manage/Email"
+                            class="alert-link">
+                            Review email verification
+                        </a>.
+                    </div>
                 }
             </div>
         </div>

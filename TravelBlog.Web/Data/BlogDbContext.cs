@@ -41,6 +41,25 @@ public class BlogDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<ApplicationUser>().HasData(new ApplicationUser
+        {
+            Id = DeletedUserConstants.UserId,
+            DisplayName = DeletedUserConstants.DisplayName,
+            ConcurrencyStamp = "deleted-user-sentinel-concurrency",
+            SecurityStamp = "deleted-user-sentinel-security",
+            Email = null,
+            NormalizedEmail = null,
+            UserName = null,
+            NormalizedUserName = null,
+            EmailConfirmed = false,
+            PhoneNumber = null,
+            PhoneNumberConfirmed = false,
+            PasswordHash = null,
+            TwoFactorEnabled = false,
+            LockoutEnabled = false,
+            AccessFailedCount = 0
+        });
+
         modelBuilder.Entity<Post>()
             .HasIndex(post => post.Slug)
             .IsUnique();

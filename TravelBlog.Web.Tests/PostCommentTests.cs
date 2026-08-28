@@ -68,6 +68,34 @@ public sealed class PostCommentTests
     }
 
     [Fact]
+    public async Task CommentPromptDistinguishesAnonymousAndUnverifiedUsers()
+    {
+        var author = await CreateUserAsync("Prompt Post Author");
+        var unverified = await CreateUserAsync(
+            "Unverified Commenter",
+            emailConfirmed: false);
+        var post = await CreatePostAsync(author, "comment-prompt");
+        using var anonymousClient = CreateClient();
+        using var unverifiedClient = await LoginAsync(unverified.Email!);
+
+        var anonymousHtml = await anonymousClient.GetStringAsync(
+            $"/Posts/Details?slug={post.Slug}");
+        var unverifiedHtml = await unverifiedClient.GetStringAsync(
+            $"/Posts/Details?slug={post.Slug}");
+
+        Assert.Contains("Log in", anonymousHtml);
+        Assert.Contains("to comment on this post", anonymousHtml);
+        Assert.Contains(
+            "Verify your email before commenting on this post",
+            unverifiedHtml);
+        Assert.Contains(
+            "href=\"/Identity/Account/Manage/Email\"",
+            unverifiedHtml);
+        Assert.DoesNotContain("to comment on this post", unverifiedHtml);
+        Assert.DoesNotContain("Post Comment", unverifiedHtml);
+    }
+
+    [Fact]
     public async Task AuthorCanEditAndDeleteOwnComment()
     {
         var author = await CreateUserAsync("Own Comment Author");
@@ -224,7 +252,9 @@ public sealed class PostCommentTests
         return client;
     }
 
-    private async Task<ApplicationUser> CreateUserAsync(string displayName)
+    private async Task<ApplicationUser> CreateUserAsync(
+        string displayName,
+        bool emailConfirmed = true)
     {
         ApplicationUser? created = null;
         await WithServicesAsync(async services =>
@@ -235,7 +265,7 @@ public sealed class PostCommentTests
             {
                 DisplayName = displayName,
                 UserName = UniqueEmail("user"),
-                EmailConfirmed = true
+                EmailConfirmed = emailConfirmed
             };
             created.Email = created.UserName;
             Assert.True(

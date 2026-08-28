@@ -182,6 +182,12 @@ namespace TravelBlog.Web.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("LastConfirmationEmailSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastPasswordResetEmailSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
@@ -225,6 +231,20 @@ namespace TravelBlog.Web.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "4a5cba2e-e755-4a1e-8316-1d1cb1dbf658",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "deleted-user-sentinel-concurrency",
+                            DisplayName = "Deleted user",
+                            EmailConfirmed = false,
+                            LockoutEnabled = false,
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "deleted-user-sentinel-security",
+                            TwoFactorEnabled = false
+                        });
                 });
 
             modelBuilder.Entity("TravelBlog.Web.Models.BookClub", b =>
@@ -538,7 +558,8 @@ namespace TravelBlog.Web.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50000)
+                        .HasColumnType("character varying(50000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

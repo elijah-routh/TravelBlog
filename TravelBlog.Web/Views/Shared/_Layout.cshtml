@@ -1,4 +1,8 @@
 ﻿@using TravelBlog.Web.Authorization
+@using Microsoft.AspNetCore.Identity
+@using TravelBlog.Web.Models
+@using TravelBlog.Web.Services
+@inject UserManager<ApplicationUser> UserManager
 @{
     var pageTitle = ViewData["Title"] as string;
     var documentTitle =
@@ -6,6 +10,14 @@
         string.Equals(pageTitle, "Home", StringComparison.OrdinalIgnoreCase)
             ? "Giant Lampoon"
             : $"{pageTitle} - Giant Lampoon";
+    var currentUser = User.Identity?.IsAuthenticated == true
+        ? await UserManager.GetUserAsync(User)
+        : null;
+    var hasVerifiedEmail = currentUser?.EmailConfirmed == true;
+    var verificationFingerprint = currentUser is not null &&
+        !hasVerifiedEmail
+            ? VerificationNoticeFingerprint.Create(currentUser)
+            : null;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -82,7 +94,10 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item"><a class="nav-link" asp-controller="Posts" asp-action="Index">@(User.IsInRole(RoleNames.Admin) ? "All Posts" : "My Posts")</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Posts" asp-action="Create">Create Post</a></li>
+                            @if (hasVerifiedEmail)
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-controller="Posts" asp-action="Create">Create Post</a></li>
+                            }
                             @if (User.IsInRole(RoleNames.Admin))
                             {
                                 <li class="nav-item"><a class="nav-link" asp-controller="Users" asp-action="Index">Users</a></li>
@@ -100,6 +115,37 @@
             </div>
         </nav>
     </header>
+
+    @if (verificationFingerprint is not null)
+    {
+        <div
+            class="toast-container position-fixed top-0 end-0 p-3 verification-toast-container">
+            <div
+                id="verification-email-toast"
+                class="toast verification-email-toast"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                data-verification-toast
+                data-verification-fingerprint="@verificationFingerprint">
+                <div class="toast-header">
+                    <strong class="me-auto">Verify your email</strong>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="toast"
+                        aria-label="Dismiss verification reminder">
+                    </button>
+                </div>
+                <div class="toast-body">
+                    Verify your email before creating or changing content.
+                    <a asp-area="Identity" asp-page="/Account/Manage/Email">
+                        Review email verification
+                    </a>.
+                </div>
+            </div>
+        </div>
+    }
 
     <main role="main">
         @RenderBody()

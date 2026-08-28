@@ -320,11 +320,15 @@ public class BookClubDetailsViewModel
 
     public int MemberCount { get; set; }
 
+    public IReadOnlyList<string> MemberDisplayNames { get; set; } = [];
+
     public bool IsMember { get; set; }
 
     public bool CanPost { get; set; }
 
     public bool IsAdmin { get; set; }
+
+    public bool IsVerified { get; set; }
 
     public bool ShowTimeline { get; set; }
 
@@ -373,6 +377,8 @@ public class ClubBookDetailsViewModel
     public bool IsAdmin { get; set; }
 
     public bool IsAuthenticated { get; set; }
+
+    public bool IsVerified { get; set; }
 
     public string DiscussionSort { get; set; } = DiscussionSortOrder.Newest;
 
@@ -454,6 +460,8 @@ public class PostDetailsViewModel
     public bool CanComment { get; set; }
 
     public bool IsAuthenticated { get; set; }
+
+    public bool CanManagePost { get; set; }
 }
 
 public class EditPostCommentViewModel
