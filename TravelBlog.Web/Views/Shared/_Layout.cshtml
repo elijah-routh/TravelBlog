@@ -112,10 +112,14 @@
 
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            @if (hasVerifiedEmail)
-                            {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Posts" asp-action="Create">Create</a></li>
-                            }
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link"
+                                    asp-controller="Posts"
+                                    asp-action="Create">
+                                    Create
+                                </a>
+                            </li>
                             @if (User.IsInRole(RoleNames.Admin))
                             {
                                 <li class="nav-item"><a class="nav-link" asp-controller="Users" asp-action="Index">Users</a></li>

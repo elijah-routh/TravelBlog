@@ -1,0 +1,24 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.Manage.GenerateRecoveryCodesModel
+@{
+    ViewData["Title"] = "Recovery codes";
+}
+
+<div class="mb-4">
+    <h2 class="h3 mb-2">Recovery codes</h2>
+    <p class="text-muted mb-0">
+        Store these codes somewhere safe. Each code can be used once if you
+        lose your authenticator app.
+    </p>
+</div>
+
+<div class="alert alert-warning">
+    Generating a new set replaces your current recovery codes.
+    This does not change the key in your authenticator app.
+</div>
+
+<form method="post">
+    <button type="submit" class="btn btn-primary">
+        Generate recovery codes
+    </button>
+</form>

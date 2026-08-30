@@ -1,14 +1,22 @@
 html {
+    height: 100%;
     font-size: 16px;
     scroll-behavior: smooth;
 }
 
 body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
     margin: 0;
     background: #f7f3eb;
     color: #252525;
     font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
         "DejaVu Sans", Verdana, sans-serif;
+}
+
+body > main {
+    flex: 1 0 auto;
 }
 
 /* Navigation */
@@ -520,6 +528,10 @@ button.posts-mini-link {
 }
 
 /* Account settings */
+.content-section--account {
+    padding: 1.75rem 0 1.5rem;
+}
+
 .account-settings-container {
     padding-right: 1.5rem;
     padding-left: 1.5rem;
@@ -531,14 +543,14 @@ button.posts-mini-link {
 }
 
 .account-settings-header {
-    padding: 2rem;
+    padding: 1.15rem 1.5rem;
     background: #303b36;
     color: #fff;
 }
 
-.account-settings-header p {
-    max-width: 700px;
-    color: #d9e1dc;
+.account-settings-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
 }
 
 .account-manage-sidebar {
@@ -598,8 +610,83 @@ button.posts-mini-link {
 }
 
 .account-manage-content {
-    min-height: 430px;
-    padding: 2.5rem;
+    min-height: 0;
+    padding: 2rem;
+}
+
+.account-manage-nav-mobile {
+    background: #ebe5d9;
+}
+
+.account-manage-nav--mobile {
+    position: sticky;
+    top: 56px;
+    z-index: 15;
+    padding: 0.75rem 0 0.5rem;
+    background: #ebe5d9;
+}
+
+.account-manage-nav__scroll {
+    display: flex;
+    gap: 0.45rem;
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.account-manage-nav__scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.account-manage-pill {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid #c7bda9;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    color: #3c443f;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.account-manage-pill:hover {
+    border-color: #a89a84;
+    background: #fff;
+    color: #1f2924;
+}
+
+.account-manage-pill.active {
+    border-color: #303b36;
+    background: #303b36;
+    color: #fff;
+}
+
+.account-manage-logout--mobile {
+    margin: 0;
+    padding: 0.35rem 1.25rem 0.85rem;
+    border-top: 0;
+}
+
+.account-manage-logout-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #8e302b;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.15rem;
+}
+
+.account-manage-logout-link:hover {
+    color: #6d2420;
 }
 
 /* Book clubs */
@@ -966,10 +1053,16 @@ button.posts-mini-link {
 
 /* Footer */
 .site-footer {
-    padding: 30px 15px;
+    flex-shrink: 0;
+    padding: 20px 15px;
     background: #171717;
     color: #fff;
     text-align: center;
+}
+
+body:has(.content-section--account) .site-footer {
+    padding-top: 16px;
+    padding-bottom: 16px;
 }
 
 .site-footer p {
@@ -1022,33 +1115,28 @@ button.posts-mini-link {
         padding-left: 1rem;
     }
 
+    .content-section--account {
+        padding: 1rem 0 1rem;
+    }
+
     .account-settings-header {
-        padding: 1.5rem;
+        padding: 0.9rem 1.25rem;
+    }
+
+    .account-settings-header h1 {
+        font-size: 1.25rem;
     }
 
     .account-manage-sidebar {
-        padding: 1.25rem;
+        padding: 0;
         border-right: 0;
-        border-bottom: 1px solid #d8d2c7;
-    }
-
-    .account-manage-nav {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .account-manage-nav .nav-link {
-        min-height: 52px;
-    }
-
-    .account-manage-logout {
-        grid-column: 1 / -1;
-        margin-top: 0.25rem;
+        border-bottom: 0;
+        background: transparent;
     }
 
     .account-manage-content {
         min-height: 0;
-        padding: 1.5rem;
+        padding: 1rem 1.25rem 1.25rem;
     }
 
     .current-book-card {

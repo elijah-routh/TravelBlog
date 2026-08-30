@@ -349,10 +349,10 @@ public class PostsController : Controller
     // GET: /Posts/Create
     public async Task<IActionResult> Create()
     {
-        ViewData["CanCreatePost"] =
-            (await _authorizationService.AuthorizeAsync(
-                User,
-                PolicyNames.VerifiedEmail)).Succeeded;
+        var isVerified = (await _authorizationService.AuthorizeAsync(
+            User,
+            PolicyNames.VerifiedEmail)).Succeeded;
+        ViewData["CanCreatePost"] = isVerified;
         return View(new CreatePostViewModel());
     }
 

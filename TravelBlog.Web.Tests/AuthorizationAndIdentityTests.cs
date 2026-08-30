@@ -71,6 +71,22 @@ public sealed class AuthorizationAndIdentityTests
     }
 
     [Fact]
+    public async Task UnverifiedUserSeesCreateActionsWithVerificationPrompt()
+    {
+        var user = await CreateUserAsync(
+            "Unverified Navigator",
+            emailConfirmed: false);
+        using var client = await LoginAsync(user.Email!);
+
+        var layoutHtml = await client.GetStringAsync("/Posts");
+        Assert.Contains("href=\"/Posts/Create\"", layoutHtml);
+        Assert.Contains("Create post", layoutHtml);
+
+        var navHtml = await client.GetStringAsync("/");
+        Assert.Contains("href=\"/Posts/Create\"", navHtml);
+    }
+
+    [Fact]
     public async Task RegistrationCapturesDisplayName()
     {
         using var client = CreateClient();
@@ -140,6 +156,56 @@ public sealed class AuthorizationAndIdentityTests
         var twoFactorHtml = await twoFactorPage.Content.ReadAsStringAsync();
         Assert.Contains("Input.TwoFactorCode", twoFactorHtml);
         Assert.Contains("Remember this browser", twoFactorHtml);
+    }
+
+    [Fact]
+    public async Task ManageTwoFactorPageMatchesCustomAccountMarkup()
+    {
+        var user = await CreateUserAsync("Two Factor Manager");
+        using var client = await LoginAsync(user.Email!);
+
+        var html = await client.GetStringAsync(
+            "/Identity/Account/Manage/TwoFactorAuthentication");
+
+        Assert.Contains("Two-factor authentication", html);
+        Assert.Contains("Not enabled", html);
+        Assert.Contains("btn btn-primary", html);
+        Assert.Contains("Add authenticator app", html);
+        Assert.Contains(
+            "href=\"/Identity/Account/Manage/EnableAuthenticator\"",
+            html);
+    }
+
+    [Fact]
+    public async Task ManagePersonalDataPageDownloadsAccountJson()
+    {
+        var user = await CreateUserAsync("Data Manager");
+        using var client = await LoginAsync(user.Email!);
+
+        var html = await client.GetStringAsync(
+            "/Identity/Account/Manage/PersonalData");
+        Assert.Contains("Personal data", html);
+        Assert.Contains("btn btn-primary", html);
+        Assert.Contains("btn btn-danger", html);
+        Assert.Contains("Download", html);
+        Assert.Contains(
+            "href=\"/Identity/Account/Manage/DeletePersonalData\"",
+            html);
+
+        var token = await GetAntiforgeryTokenAsync(
+            client,
+            "/Identity/Account/Manage/PersonalData");
+        var download = await client.PostAsync(
+            "/Identity/Account/Manage/PersonalData?handler=Download",
+            Form(token));
+
+        Assert.Equal(HttpStatusCode.OK, download.StatusCode);
+        Assert.Equal(
+            "application/json",
+            download.Content.Headers.ContentType?.MediaType);
+        var json = await download.Content.ReadAsStringAsync();
+        Assert.Contains(user.Email!, json);
+        Assert.Contains("Data Manager", json);
     }
 
     [Fact]

@@ -1,0 +1,23 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.Manage.Disable2faModel
+@{
+    ViewData["Title"] = "Disable two-factor authentication";
+}
+
+<div class="mb-4">
+    <h2 class="h3 mb-2">Disable two-factor authentication</h2>
+    <p class="text-muted mb-0">
+        You can turn 2FA back on later by verifying your authenticator app again.
+    </p>
+</div>
+
+<div class="alert alert-warning">
+    This only turns 2FA off. It does not change the key already stored in
+    your authenticator app. Reset the authenticator app if you want a new key.
+</div>
+
+<form method="post">
+    <button type="submit" class="btn btn-primary">
+        Disable 2FA
+    </button>
+</form>

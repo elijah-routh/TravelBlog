@@ -30,6 +30,10 @@ public interface IAccountAnonymizationService
         string actorId,
         string targetId,
         CancellationToken cancellationToken = default);
+
+    Task<AccountAnonymizationResult> AnonymizeSelfAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class AccountAnonymizationService(
@@ -55,6 +59,33 @@ public sealed class AccountAnonymizationService(
             return new(AccountAnonymizationStatus.ProtectedAccount);
         }
 
+        return await ExecuteAnonymizationAsync(
+            actorId,
+            targetId,
+            cancellationToken);
+    }
+
+    public async Task<AccountAnonymizationResult> AnonymizeSelfAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (userId == BootstrapAdminConstants.UserId ||
+            userId == DeletedUserConstants.UserId)
+        {
+            return new(AccountAnonymizationStatus.ProtectedAccount);
+        }
+
+        return await ExecuteAnonymizationAsync(
+            userId,
+            userId,
+            cancellationToken);
+    }
+
+    private async Task<AccountAnonymizationResult> ExecuteAnonymizationAsync(
+        string actorId,
+        string targetId,
+        CancellationToken cancellationToken)
+    {
         var strategy = context.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {

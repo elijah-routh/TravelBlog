@@ -2,50 +2,63 @@
     var currentPage =
         ViewContext.RouteData.Values["page"]?.ToString();
 
-    string ActiveClass(string page)
+    string ActiveClass(string page) =>
+        string.Equals(currentPage, page, StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : string.Empty;
+
+    var navItems = new[]
     {
-        return string.Equals(
-            currentPage,
-            page,
-            StringComparison.OrdinalIgnoreCase)
-                ? "active"
-                : string.Empty;
-    }
+        new
+        {
+            Page = "/Account/Manage/Index",
+            Route = "./Index",
+            Label = "Profile",
+            ShortLabel = "Profile"
+        },
+        new
+        {
+            Page = "/Account/Manage/Email",
+            Route = "./Email",
+            Label = "Email",
+            ShortLabel = "Email"
+        },
+        new
+        {
+            Page = "/Account/Manage/ChangePassword",
+            Route = "./ChangePassword",
+            Label = "Password",
+            ShortLabel = "Password"
+        },
+        new
+        {
+            Page = "/Account/Manage/TwoFactorAuthentication",
+            Route = "./TwoFactorAuthentication",
+            Label = "Two-factor authentication",
+            ShortLabel = "2FA"
+        },
+        new
+        {
+            Page = "/Account/Manage/PersonalData",
+            Route = "./PersonalData",
+            Label = "Personal data",
+            ShortLabel = "Data"
+        }
+    };
 }
 
 <nav
-    class="account-manage-nav nav flex-column gap-2"
+    class="account-manage-nav account-manage-nav--desktop nav flex-column gap-2 d-none d-lg-flex"
     aria-label="Account settings">
-    <a
-        class="nav-link @ActiveClass("/Account/Manage/Index")"
-        asp-page="./Index">
-        <span class="account-nav-label">Profile</span>
-        <span aria-hidden="true">›</span>
-    </a>
-    <a
-        class="nav-link @ActiveClass("/Account/Manage/Email")"
-        asp-page="./Email">
-        <span class="account-nav-label">Email</span>
-        <span aria-hidden="true">›</span>
-    </a>
-    <a
-        class="nav-link @ActiveClass("/Account/Manage/ChangePassword")"
-        asp-page="./ChangePassword">
-        <span class="account-nav-label">Password</span>
-        <span aria-hidden="true">›</span>
-    </a>
-    <a
-        class="nav-link @ActiveClass("/Account/Manage/TwoFactorAuthentication")"
-        asp-page="./TwoFactorAuthentication">
-        <span class="account-nav-label">Two-factor authentication</span>
-        <span aria-hidden="true">›</span>
-    </a>
-    <a
-        class="nav-link @ActiveClass("/Account/Manage/PersonalData")"
-        asp-page="./PersonalData">
-        <span class="account-nav-label">Personal data</span>
-        <span aria-hidden="true">›</span>
-    </a>
+    @foreach (var item in navItems)
+    {
+        <a
+            class="nav-link @ActiveClass(item.Page)"
+            asp-page="@item.Route">
+            <span class="account-nav-label">@item.Label</span>
+            <span aria-hidden="true">›</span>
+        </a>
+    }
 
     <form
         class="account-manage-logout"
@@ -61,3 +74,33 @@
         </button>
     </form>
 </nav>
+
+<div class="account-manage-nav-mobile d-lg-none">
+    <nav
+        class="account-manage-nav account-manage-nav--mobile"
+        aria-label="Account settings">
+        <div class="account-manage-nav__scroll">
+            @foreach (var item in navItems)
+            {
+                <a
+                    class="account-manage-pill @ActiveClass(item.Page)"
+                    asp-page="@item.Route">
+                    @item.ShortLabel
+                </a>
+            }
+        </div>
+    </nav>
+
+    <form
+        class="account-manage-logout account-manage-logout--mobile"
+        asp-area="Identity"
+        asp-page="/Account/Logout"
+        asp-route-returnUrl="@Url.Content("~/")"
+        method="post">
+        <button
+            type="submit"
+            class="account-manage-logout-link">
+            Log out
+        </button>
+    </form>
+</div>

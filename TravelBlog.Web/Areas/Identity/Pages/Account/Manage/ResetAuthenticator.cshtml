@@ -1,0 +1,23 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.Manage.ResetAuthenticatorModel
+@{
+    ViewData["Title"] = "Reset authenticator app";
+}
+
+<div class="mb-4">
+    <h2 class="h3 mb-2">Reset authenticator app</h2>
+    <p class="text-muted mb-0">
+        Generate a new key if you lost access to your authenticator app.
+    </p>
+</div>
+
+<div class="alert alert-warning">
+    Your current authenticator app will stop working until you set it up
+    again. Two-factor authentication stays off until you verify the new key.
+</div>
+
+<form method="post">
+    <button type="submit" class="btn btn-primary">
+        Reset authenticator key
+    </button>
+</form>

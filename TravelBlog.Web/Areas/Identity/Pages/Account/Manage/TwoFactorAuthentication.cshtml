@@ -1,0 +1,103 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.Manage.TwoFactorAuthenticationModel
+@{
+    ViewData["Title"] = "Two-factor authentication";
+}
+
+<div class="mb-4">
+    <h2 class="h3 mb-2">Two-factor authentication</h2>
+    <p class="text-muted mb-0">
+        Add a second step when you sign in so your account stays protected.
+    </p>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success">
+        @Model.StatusMessage
+    </div>
+}
+
+<dl class="row">
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">
+        @if (Model.Is2faEnabled)
+        {
+            <span class="badge bg-success">Enabled</span>
+        }
+        else
+        {
+            <span class="badge bg-warning text-dark">Not enabled</span>
+        }
+    </dd>
+    @if (Model.Is2faEnabled)
+    {
+        <dt class="col-sm-3">Recovery codes</dt>
+        <dd class="col-sm-9">@Model.RecoveryCodesLeft remaining</dd>
+    }
+</dl>
+
+@if (Model.Is2faEnabled && Model.RecoveryCodesLeft == 0)
+{
+    <div class="alert alert-danger">
+        You have no recovery codes left.
+        Generate a new set before you need them to sign in.
+    </div>
+}
+else if (Model.Is2faEnabled && Model.RecoveryCodesLeft == 1)
+{
+    <div class="alert alert-danger">
+        You have 1 recovery code left. Generate a new set soon.
+    </div>
+}
+else if (Model.Is2faEnabled && Model.RecoveryCodesLeft <= 3)
+{
+    <div class="alert alert-warning">
+        You have @Model.RecoveryCodesLeft recovery codes left.
+        Generate a new set soon.
+    </div>
+}
+
+@if (Model.Is2faEnabled)
+{
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        @if (Model.IsMachineRemembered)
+        {
+            <form method="post">
+                <button type="submit" class="btn btn-primary">
+                    Forget this browser
+                </button>
+            </form>
+        }
+        <a asp-page="./Disable2fa" class="btn btn-primary">
+            Disable 2FA
+        </a>
+        <a asp-page="./GenerateRecoveryCodes" class="btn btn-primary">
+            Reset recovery codes
+        </a>
+    </div>
+}
+
+<div class="mb-4">
+    <h3 class="h5 mb-2">Authenticator app</h3>
+    <p class="text-muted mb-3">
+        Use an authenticator app to generate a code each time you sign in.
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+        @if (!Model.HasAuthenticator)
+        {
+            <a asp-page="./EnableAuthenticator" class="btn btn-primary">
+                Add authenticator app
+            </a>
+        }
+        else
+        {
+            <a asp-page="./EnableAuthenticator" class="btn btn-primary">
+                Set up authenticator app
+            </a>
+            <a asp-page="./ResetAuthenticator" class="btn btn-primary">
+                Reset authenticator app
+            </a>
+        }
+    </div>
+</div>

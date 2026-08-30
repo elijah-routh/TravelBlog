@@ -1,0 +1,39 @@
+@page
+@model TravelBlog.Web.Areas.Identity.Pages.Account.Manage.PersonalDataModel
+@{
+    ViewData["Title"] = "Personal data";
+}
+
+<div class="mb-4">
+    <h2 class="h3 mb-2">Personal data</h2>
+    <p class="text-muted mb-0">
+        Download a copy of the personal data stored with your account, or
+        permanently close the account.
+    </p>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-info">
+        @Model.StatusMessage
+    </div>
+}
+
+<div class="alert alert-warning">
+    Deleting your account permanently removes it. Public writing stays on
+    the site and is attributed to a deleted user.
+</div>
+
+<div class="d-flex flex-wrap gap-2">
+    <form method="post" asp-page-handler="Download">
+        <button type="submit" class="btn btn-primary">
+            Download
+        </button>
+    </form>
+    @if (Model.CanDeleteAccount)
+    {
+        <a asp-page="./DeletePersonalData" class="btn btn-danger">
+            Delete
+        </a>
+    }
+</div>

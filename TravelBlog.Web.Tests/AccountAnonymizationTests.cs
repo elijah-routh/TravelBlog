@@ -238,6 +238,53 @@ public sealed class AccountAnonymizationTests
         });
     }
 
+    [Fact]
+    public async Task UserCanCloseOwnAccountFromPersonalData()
+    {
+        var user = await CreateUserAsync("Self Close Owner");
+        var oldEmail = user.Email!;
+        int postId = 0;
+        await WithServicesAsync(async services =>
+        {
+            var context = services.GetRequiredService<BlogDbContext>();
+            var post = new Post
+            {
+                AuthorId = user.Id,
+                Title = "Self close post",
+                Slug = $"self-close-{Guid.NewGuid():N}",
+                Content = "Self close content.",
+                Category = PostCategory.LiteratureAndStuff,
+                IsPublished = true
+            };
+            context.Posts.Add(post);
+            await context.SaveChangesAsync();
+            postId = post.Id;
+        });
+
+        using var client = await LoginAsync(oldEmail);
+        var token = await GetAntiforgeryTokenAsync(
+            client,
+            "/Identity/Account/Manage/DeletePersonalData");
+        var response = await client.PostAsync(
+            "/Identity/Account/Manage/DeletePersonalData",
+            Form(token, ("Input.Password", Password)));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/", response.Headers.Location?.OriginalString);
+        await WithServicesAsync(async services =>
+        {
+            var context = services.GetRequiredService<BlogDbContext>();
+            context.ChangeTracker.Clear();
+            var manager =
+                services.GetRequiredService<UserManager<ApplicationUser>>();
+            Assert.Null(await manager.FindByIdAsync(user.Id));
+            Assert.Equal(
+                DeletedUserConstants.UserId,
+                (await context.Posts.SingleAsync(
+                    post => post.Id == postId)).AuthorId);
+        });
+    }
+
     private HttpClient CreateClient() =>
         _factory.CreateClient(new WebApplicationFactoryClientOptions
         {

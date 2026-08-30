@@ -62,15 +62,12 @@
                             aria-current="@(isMine ? "page" : null)">
                             My posts
                         </a>
-                        @if (Model.CanWrite)
-                        {
-                            <a
-                                asp-controller="Posts"
-                                asp-action="Create"
-                                class="posts-mini-link">
-                                Create post
-                            </a>
-                        }
+                        <a
+                            asp-controller="Posts"
+                            asp-action="Create"
+                            class="posts-mini-link">
+                            Create post
+                        </a>
                     }
 
                     <button
