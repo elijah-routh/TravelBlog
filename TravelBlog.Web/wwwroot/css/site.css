@@ -212,6 +212,176 @@ body {
     color: #5a5a5a;
 }
 
+/* Posts index */
+.posts-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+.posts-heading__intro {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.posts-mini-toolbar {
+    position: relative;
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: left;
+}
+
+.posts-mini-toolbar__row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.35rem 0.6rem;
+}
+
+.posts-mini-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #7a7a7a;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+button.posts-mini-link {
+    cursor: pointer;
+}
+
+.posts-mini-link:hover {
+    color: #252525;
+    text-decoration: underline;
+}
+
+.posts-mini-link.is-active {
+    color: #252525;
+    text-decoration: underline;
+    text-underline-offset: 0.15rem;
+}
+
+.posts-mini-toolbar__panel {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    right: auto;
+    z-index: 20;
+    min-width: 11.5rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid #d8d2c7;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.posts-mini-panel__label {
+    margin-bottom: 0.35rem;
+    color: #7a7a7a;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.posts-mini-toolbar__panel .form-check {
+    min-height: 1.35rem;
+    margin-bottom: 0.2rem;
+    padding-left: 1.45rem;
+}
+
+.posts-mini-toolbar__panel .form-check:last-child {
+    margin-bottom: 0;
+}
+
+.posts-mini-toolbar__panel .form-check-label {
+    font-size: 0.85rem;
+}
+
+.posts-mini-toolbar__panel .form-switch {
+    padding-left: 2.2rem;
+}
+
+.posts-mini-panel__divider {
+    margin: 0.55rem 0;
+    border-top: 1px solid #e8e4dc;
+}
+
+.posts-grid--compact .travel-card img {
+    height: 150px;
+}
+
+.posts-grid--compact .travel-card .card-body {
+    padding: 16px;
+}
+
+.posts-grid--compact .travel-card .card-title {
+    font-size: 1.05rem;
+}
+
+.posts-grid--compact .travel-card .card-text {
+    font-size: 0.9rem;
+}
+
+@media (max-width: 767px) {
+    .posts-grid--compact .travel-card img {
+        height: 120px;
+    }
+}
+
+/* Toolbar beside title; links stack vertically */
+@media (min-width: 768px) {
+    .posts-heading {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .posts-heading__intro {
+        flex: 1 1 auto;
+    }
+
+    .posts-mini-toolbar {
+        width: auto;
+        margin-left: auto;
+        text-align: right;
+    }
+
+    .posts-mini-toolbar__row {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: flex-end;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+
+    .posts-mini-toolbar__panel {
+        left: auto;
+        right: 0;
+    }
+}
+
+/* Toolbar beside title; links in one row */
+@media (min-width: 992px) {
+    .posts-mini-toolbar__row {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.35rem 0.6rem;
+    }
+}
+
 /* Compact editorial rows */
 .editorial-row-section {
     padding: 40px 0;

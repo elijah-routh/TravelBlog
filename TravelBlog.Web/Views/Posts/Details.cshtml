@@ -37,9 +37,7 @@
 
                 <p class="text-muted">
                     By @Model.Post.Author.DisplayName ·
-                    @Model.Post.CreatedAt
-                        .ToLocalTime()
-                        .ToString("MMMM d, yyyy")
+                    @Model.Post.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy h:mm tt")
                 </p>
 
                 @if (!string.IsNullOrWhiteSpace(Model.Post.ImagePath))

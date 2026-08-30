@@ -18,6 +18,8 @@
         !hasVerifiedEmail
             ? VerificationNoticeFingerprint.Create(currentUser)
             : null;
+    var pageBackgroundClass =
+        PageBackgrounds.GetBodyClass(ViewData[PageBackgrounds.ViewDataKey]);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -44,9 +46,17 @@
         rel="stylesheet"
         href="~/css/site.css"
         asp-append-version="true" />
+
+    @if (pageBackgroundClass is not null)
+    {
+        <link
+            rel="stylesheet"
+            href="~/css/page-backgrounds.css"
+            asp-append-version="true" />
+    }
 </head>
 
-<body>
+<body class="@pageBackgroundClass">
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
             <div class="container">
@@ -91,12 +101,20 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a
+                                class="nav-link"
+                                asp-controller="Posts"
+                                asp-action="Index">
+                                Posts
+                            </a>
+                        </li>
+
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Posts" asp-action="Index">@(User.IsInRole(RoleNames.Admin) ? "All Posts" : "My Posts")</a></li>
                             @if (hasVerifiedEmail)
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Posts" asp-action="Create">Create Post</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Posts" asp-action="Create">Create</a></li>
                             }
                             @if (User.IsInRole(RoleNames.Admin))
                             {

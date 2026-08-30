@@ -1,0 +1,48 @@
+/*
+ * Page background themes
+ *
+ * Enable on any view:
+ *   ViewData[PageBackgrounds.ViewDataKey] = PageBackgrounds.Notebook;
+ *
+ * Add a new theme:
+ *   1. Add a constant in Models/PageBackgrounds.cs
+ *   2. Add a .page-bg--your-theme ruleset below
+ */
+
+.page-bg main {
+    position: relative;
+    isolation: isolate;
+}
+
+.page-bg main::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Lined notebook paper with a left margin rule */
+.page-bg--notebook main {
+    background-color: #fbf8f1;
+}
+
+.page-bg--notebook main::before {
+    background-color: #fbf8f1;
+    background-image:
+        linear-gradient(
+            to right,
+            transparent 4.5rem,
+            rgba(210, 110, 110, 0.5) 4.5rem,
+            rgba(210, 110, 110, 0.5) calc(4.5rem + 2px),
+            transparent calc(4.5rem + 2px)
+        ),
+        repeating-linear-gradient(
+            to bottom,
+            transparent,
+            transparent 1.65rem,
+            rgba(125, 155, 195, 0.24) 1.65rem,
+            rgba(125, 155, 195, 0.24) calc(1.65rem + 1px)
+        );
+    background-attachment: local;
+}

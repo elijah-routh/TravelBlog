@@ -1,58 +1,250 @@
 @using Microsoft.AspNetCore.Identity
 @using TravelBlog.Web.Authorization
-@model IEnumerable<TravelBlog.Web.Models.Post>
+@using TravelBlog.Web.Models
+@model PostsIndexViewModel
 @inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "Posts";
-    var currentUser = await UserManager.GetUserAsync(User);
-    var canWrite = currentUser?.EmailConfirmed == true;
+    ViewData[PageBackgrounds.ViewDataKey] = PageBackgrounds.Notebook;
+    var isMine = Model.Scope == PostListScope.Mine;
+    var allLinkClass = isMine ? "posts-mini-link" : "posts-mini-link is-active";
+    var mineLinkClass = isMine ? "posts-mini-link is-active" : "posts-mini-link";
+    var galleryRoute = Model.IsCompactGallery ? PostGallerySize.Compact : null;
+    var postColumnClass = Model.IsCompactGallery
+        ? "col-6 col-md-4 col-lg-3"
+        : "col-sm-12 col-md-6 col-lg-4";
+    var postGridClass = Model.IsCompactGallery
+        ? "row g-3 posts-grid posts-grid--compact"
+        : "row g-4 posts-grid";
 }
 
 <section class="content-section">
     <div class="container">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-            <div>
+        <div class="posts-heading mb-4">
+            <div class="posts-heading__intro">
                 <h1 class="mb-1">Posts</h1>
-
-                <p class="text-muted mb-0">
-                    Manage Giant Lampoon posts — create, edit, and publish.
+                <p class="text-muted small mb-0">
+                    @if (isMine)
+                    {
+                        @:Your posts — create, edit, and publish.
+                    }
+                    else
+                    {
+                        @:Browse published posts from Giant Lampoon.
+                    }
                 </p>
             </div>
 
-            @if (canWrite)
-            {
-                <a
-                    asp-controller="Posts"
-                    asp-action="Create"
-                    class="btn btn-primary">
-                    Create New Post
-                </a>
-            }
+            <div class="posts-mini-toolbar">
+                <div
+                    class="posts-mini-toolbar__row"
+                    role="group"
+                    aria-label="Post list and sorting">
+                    @if (Model.IsAuthenticated)
+                    {
+                        <a
+                            asp-action="Index"
+                            asp-route-scope="@PostListScope.All"
+                            asp-route-sort="@Model.Sort"
+                            asp-route-gallery="@galleryRoute"
+                            class="@allLinkClass"
+                            aria-current="@(isMine ? null : "page")">
+                            All posts
+                        </a>
+                        <a
+                            asp-action="Index"
+                            asp-route-scope="@PostListScope.Mine"
+                            asp-route-sort="@Model.Sort"
+                            asp-route-status="@(Model.ShowUnpublished ? PostPublishFilter.Both : PostPublishFilter.Published)"
+                            asp-route-gallery="@galleryRoute"
+                            class="@mineLinkClass"
+                            aria-current="@(isMine ? "page" : null)">
+                            My posts
+                        </a>
+                        @if (Model.CanWrite)
+                        {
+                            <a
+                                asp-controller="Posts"
+                                asp-action="Create"
+                                class="posts-mini-link">
+                                Create post
+                            </a>
+                        }
+                    }
+
+                    <button
+                        type="button"
+                        class="posts-mini-link posts-mini-sort-toggle"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#posts-settings-panel"
+                        aria-expanded="false"
+                        aria-controls="posts-settings-panel">
+                        Sort
+                    </button>
+                </div>
+
+                <div
+                    class="collapse posts-mini-toolbar__panel"
+                    id="posts-settings-panel">
+                    <form
+                        id="posts-filter-form"
+                        asp-action="Index"
+                        method="get">
+                        @if (Model.IsAuthenticated)
+                        {
+                            <input type="hidden" name="scope" value="@Model.Scope" />
+                            <input
+                                type="hidden"
+                                name="status"
+                                id="posts-status"
+                                value="@(Model.ShowUnpublished ? PostPublishFilter.Both : PostPublishFilter.Published)" />
+                        }
+
+                        <input
+                            type="hidden"
+                            name="gallery"
+                            id="posts-gallery"
+                            value="@(Model.IsCompactGallery ? PostGallerySize.Compact : PostGallerySize.Default)" />
+
+                        <p class="posts-mini-panel__label">Sort by</p>
+
+                        <div class="form-check">
+                            @if (Model.Sort == PostSortOrder.Newest)
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="radio"
+                                    name="sort"
+                                    id="sort-newest"
+                                    value="@PostSortOrder.Newest"
+                                    checked
+                                    onchange="this.form.submit()" />
+                            }
+                            else
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="radio"
+                                    name="sort"
+                                    id="sort-newest"
+                                    value="@PostSortOrder.Newest"
+                                    onchange="this.form.submit()" />
+                            }
+                            <label class="form-check-label" for="sort-newest">
+                                Newest first
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            @if (Model.Sort == PostSortOrder.Oldest)
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="radio"
+                                    name="sort"
+                                    id="sort-oldest"
+                                    value="@PostSortOrder.Oldest"
+                                    checked
+                                    onchange="this.form.submit()" />
+                            }
+                            else
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="radio"
+                                    name="sort"
+                                    id="sort-oldest"
+                                    value="@PostSortOrder.Oldest"
+                                    onchange="this.form.submit()" />
+                            }
+                            <label class="form-check-label" for="sort-oldest">
+                                Oldest first
+                            </label>
+                        </div>
+
+                        <div class="posts-mini-panel__divider"></div>
+                        <p class="posts-mini-panel__label">Gallery</p>
+                        <div class="form-check form-switch mb-0">
+                            @if (Model.IsCompactGallery)
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    id="compact-gallery"
+                                    checked
+                                    onchange="document.getElementById('posts-gallery').value = this.checked ? '@PostGallerySize.Compact' : '@PostGallerySize.Default'; this.form.submit();" />
+                            }
+                            else
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    id="compact-gallery"
+                                    onchange="document.getElementById('posts-gallery').value = this.checked ? '@PostGallerySize.Compact' : '@PostGallerySize.Default'; this.form.submit();" />
+                            }
+                            <label
+                                class="form-check-label"
+                                for="compact-gallery">
+                                Smaller cards
+                            </label>
+                        </div>
+
+                        @if (Model.IsAuthenticated && isMine)
+                        {
+                            <div class="posts-mini-panel__divider"></div>
+                            <div class="form-check form-switch mb-0">
+                                @if (Model.ShowUnpublished)
+                                {
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="show-unpublished"
+                                        checked
+                                        onchange="document.getElementById('posts-status').value = this.checked ? '@PostPublishFilter.Both' : '@PostPublishFilter.Published'; this.form.submit();" />
+                                }
+                                else
+                                {
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="show-unpublished"
+                                        onchange="document.getElementById('posts-status').value = this.checked ? '@PostPublishFilter.Both' : '@PostPublishFilter.Published'; this.form.submit();" />
+                                }
+                                <label
+                                    class="form-check-label"
+                                    for="show-unpublished">
+                                    Show unpublished
+                                </label>
+                            </div>
+                        }
+                    </form>
+                </div>
+            </div>
         </div>
 
-        @if (!Model.Any())
+        @if (!Model.Posts.Any())
         {
             <div class="alert alert-info">
-                No posts have been created yet.
-
-                @if (canWrite)
+                @if (isMine)
                 {
-                    <a
-                        asp-controller="Posts"
-                        asp-action="Create"
-                        class="alert-link">
-                        Create your first post.
-                    </a>
+                    @:No posts match this filter.
+                }
+                else
+                {
+                    @:No published posts yet.
                 }
             </div>
         }
         else
         {
-            <div class="row g-4">
-                @foreach (var post in Model)
+            <div class="@postGridClass">
+                @foreach (var post in Model.Posts)
                 {
-                    <div class="col-sm-12 col-md-6 col-lg-4">
+                    <div class="@postColumnClass">
                         <article class="card travel-card">
                             @if (!string.IsNullOrWhiteSpace(post.ImagePath))
                             {
@@ -99,10 +291,7 @@
                                 }
 
                                 <p class="small text-muted">
-                                    Created
-                                    @post.CreatedAt
-                                        .ToLocalTime()
-                                        .ToString("MMMM d, yyyy")
+                                    Created @post.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy h:mm tt")
                                 </p>
 
                                 <div class="mt-auto d-flex flex-wrap gap-2">
@@ -113,7 +302,7 @@
                                         View
                                     </a>
 
-                                    @if (canWrite &&
+                                    @if (Model.CanWrite &&
                                         (User.IsInRole(RoleNames.Admin) ||
                                          post.AuthorId == UserManager.GetUserId(User)))
                                     {

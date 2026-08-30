@@ -306,23 +306,41 @@ public sealed class AuthorizationAndIdentityTests
     }
 
     [Fact]
-    public async Task PostsIndexFiltersRegularUsersButNotAdmins()
+    public async Task PostsIndexShowsPublishedPostsByDefaultAndMineScopeForAuthors()
     {
         var first = await CreateUserAsync("Index First");
         var second = await CreateUserAsync("Index Second");
         var admin = await CreateUserAsync("Index Admin", isAdmin: true);
-        var ownPost = await CreatePostAsync(first, "visible-own");
-        var otherPost = await CreatePostAsync(second, "hidden-other");
+        var ownPublished = await CreatePostAsync(first, "visible-own");
+        var otherPublished = await CreatePostAsync(second, "visible-other");
+        var otherDraft = await CreatePostAsync(
+            second,
+            "hidden-draft",
+            isPublished: false);
 
+        using var anonymousClient = CreateClient();
+        var anonymousHtml = await anonymousClient.GetStringAsync("/Posts");
         using var regularClient = await LoginAsync(first.Email!);
         var regularHtml = await regularClient.GetStringAsync("/Posts");
+        var mineHtml = await regularClient.GetStringAsync(
+            "/Posts?scope=mine&status=both");
         using var adminClient = await LoginAsync(admin.Email!);
         var adminHtml = await adminClient.GetStringAsync("/Posts");
 
-        Assert.Contains(ownPost.Title, regularHtml);
-        Assert.DoesNotContain(otherPost.Title, regularHtml);
-        Assert.Contains(ownPost.Title, adminHtml);
-        Assert.Contains(otherPost.Title, adminHtml);
+        Assert.Contains(ownPublished.Title, anonymousHtml);
+        Assert.Contains(otherPublished.Title, anonymousHtml);
+        Assert.DoesNotContain(otherDraft.Title, anonymousHtml);
+
+        Assert.Contains(ownPublished.Title, regularHtml);
+        Assert.Contains(otherPublished.Title, regularHtml);
+        Assert.DoesNotContain(otherDraft.Title, regularHtml);
+
+        Assert.Contains(ownPublished.Title, mineHtml);
+        Assert.DoesNotContain(otherPublished.Title, mineHtml);
+
+        Assert.Contains(ownPublished.Title, adminHtml);
+        Assert.Contains(otherPublished.Title, adminHtml);
+        Assert.DoesNotContain(otherDraft.Title, adminHtml);
     }
 
     [Fact]

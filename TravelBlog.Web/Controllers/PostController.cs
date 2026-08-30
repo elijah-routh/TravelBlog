@@ -37,24 +37,67 @@ public class PostsController : Controller
     }
 
     // GET: /Posts
-    public async Task<IActionResult> Index()
+    [AllowAnonymous]
+    public async Task<IActionResult> Index(
+        string? scope,
+        string? sort,
+        string? status,
+        string? gallery)
     {
+        var normalizedScope = PostListScope.Normalize(scope);
+        if (normalizedScope == PostListScope.Mine &&
+            User.Identity?.IsAuthenticated != true)
+        {
+            return Challenge();
+        }
+
+        var normalizedSort = PostSortOrder.Normalize(sort);
+        var normalizedStatus = PostPublishFilter.Normalize(status);
+        var isCompactGallery = PostGallerySize.IsCompact(gallery);
+
         var query = _context.Posts
             .AsNoTracking()
             .Include(post => post.Author)
             .AsQueryable();
 
-        if (!User.IsInRole(RoleNames.Admin))
+        if (normalizedScope == PostListScope.Mine)
         {
             var userId = _userManager.GetUserId(User);
             query = query.Where(post => post.AuthorId == userId);
+            query = normalizedStatus switch
+            {
+                PostPublishFilter.Unpublished =>
+                    query.Where(post => !post.IsPublished),
+                PostPublishFilter.Both => query,
+                _ => query.Where(post => post.IsPublished)
+            };
+        }
+        else
+        {
+            query = query.Where(post => post.IsPublished);
         }
 
-        var posts = await query
-            .OrderByDescending(post => post.CreatedAt)
-            .ToListAsync();
+        query = normalizedSort == PostSortOrder.Oldest
+            ? query.OrderBy(post => post.CreatedAt)
+            : query.OrderByDescending(post => post.CreatedAt);
 
-        return View(posts);
+        var posts = await query.ToListAsync();
+        var currentUser = await _userManager.GetUserAsync(User);
+
+        return View(new PostsIndexViewModel
+        {
+            Posts = posts,
+            Scope = normalizedScope,
+            Sort = normalizedSort,
+            Status = normalizedScope == PostListScope.Mine
+                ? normalizedStatus
+                : PostPublishFilter.Published,
+            ShowUnpublished = normalizedScope == PostListScope.Mine &&
+                normalizedStatus != PostPublishFilter.Published,
+            IsCompactGallery = isCompactGallery,
+            IsAuthenticated = User.Identity?.IsAuthenticated == true,
+            CanWrite = currentUser?.EmailConfirmed == true
+        });
     }
 
     // GET: /Posts/Details/colca-canyon
