@@ -32,18 +32,41 @@ body > main {
 
 #mainNavigation .nav-link {
     position: relative;
-    padding-bottom: 0.4rem;
 }
 
-#mainNavigation .nav-link.is-active::after {
-    content: "";
-    position: absolute;
-    right: 0.5rem;
-    bottom: 0.1rem;
-    left: 0.5rem;
-    height: 2px;
-    border-radius: 1px;
-    background: currentColor;
+@media (min-width: 992px) {
+    #mainNavigation .nav-link {
+        padding-bottom: 0.4rem;
+    }
+
+    #mainNavigation .nav-link.is-active::after {
+        content: "";
+        position: absolute;
+        right: 0.5rem;
+        bottom: 0.1rem;
+        left: 0.5rem;
+        height: 2px;
+        border-radius: 1px;
+        background: currentColor;
+    }
+}
+
+@media (max-width: 991.98px) {
+    #mainNavigation .nav-link {
+        padding-left: 1.25rem;
+    }
+
+    #mainNavigation .nav-link.is-active::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 50%;
+        background: currentColor;
+        transform: translateY(-50%);
+    }
 }
 
 /* Hero */
@@ -732,10 +755,12 @@ button.posts-mini-link {
     color: #fff;
 }
 
-.account-manage-logout--mobile {
+.account-manage-logout-inline {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
     margin: 0;
-    padding: 0.35rem 1.25rem 0.85rem;
-    border-top: 0;
+    padding-left: 0.25rem;
 }
 
 .account-manage-logout-link {
@@ -745,8 +770,11 @@ button.posts-mini-link {
     color: #8e302b;
     font-size: 0.82rem;
     font-weight: 600;
+    line-height: 1.2;
     text-decoration: underline;
     text-underline-offset: 0.15rem;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
 .account-manage-logout-link:hover {

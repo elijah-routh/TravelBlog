@@ -88,19 +88,19 @@
                     @item.ShortLabel
                 </a>
             }
+
+            <form
+                class="account-manage-logout-inline"
+                asp-area="Identity"
+                asp-page="/Account/Logout"
+                asp-route-returnUrl="@Url.Content("~/")"
+                method="post">
+                <button
+                    type="submit"
+                    class="account-manage-logout-link">
+                    Log out
+                </button>
+            </form>
         </div>
     </nav>
-
-    <form
-        class="account-manage-logout account-manage-logout--mobile"
-        asp-area="Identity"
-        asp-page="/Account/Logout"
-        asp-route-returnUrl="@Url.Content("~/")"
-        method="post">
-        <button
-            type="submit"
-            class="account-manage-logout-link">
-            Log out
-        </button>
-    </form>
 </div>
