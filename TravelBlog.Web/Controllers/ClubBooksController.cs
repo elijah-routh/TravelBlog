@@ -522,6 +522,8 @@ public class ClubBooksController : Controller
             .Include(existing => existing.DiscussionPosts)
                 .ThenInclude(post => post.Author)
             .Include(existing => existing.DiscussionPosts)
+                .ThenInclude(post => post.Likes)
+            .Include(existing => existing.DiscussionPosts)
                 .ThenInclude(post => post.Poll)
                     .ThenInclude(poll => poll!.Options)
                         .ThenInclude(option => option.Votes)

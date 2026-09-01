@@ -18,6 +18,7 @@ public class PostsController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IImageStorage _imageStorage;
     private readonly IImageUploadRateLimiter _imageUploadRateLimiter;
+    private readonly INutPlaceholderImages _nutPlaceholders;
     private readonly ILogger<PostsController> _logger;
 
     public PostsController(
@@ -26,6 +27,7 @@ public class PostsController : Controller
         UserManager<ApplicationUser> userManager,
         IImageStorage imageStorage,
         IImageUploadRateLimiter imageUploadRateLimiter,
+        INutPlaceholderImages nutPlaceholders,
         ILogger<PostsController> logger)
     {
         _context = context;
@@ -33,6 +35,7 @@ public class PostsController : Controller
         _userManager = userManager;
         _imageStorage = imageStorage;
         _imageUploadRateLimiter = imageUploadRateLimiter;
+        _nutPlaceholders = nutPlaceholders;
         _logger = logger;
     }
 
@@ -42,7 +45,8 @@ public class PostsController : Controller
         string? scope,
         string? sort,
         string? status,
-        string? gallery)
+        string? gallery,
+        bool showHidden = false)
     {
         var normalizedScope = PostListScope.Normalize(scope);
         if (normalizedScope == PostListScope.Mine &&
@@ -54,15 +58,18 @@ public class PostsController : Controller
         var normalizedSort = PostSortOrder.Normalize(sort);
         var normalizedStatus = PostPublishFilter.Normalize(status);
         var isCompactGallery = PostGallerySize.IsCompact(gallery);
+        var userId = _userManager.GetUserId(User);
+        var isAdmin = User.IsInRole(RoleNames.Admin);
+        var includeHidden = isAdmin && showHidden;
 
         var query = _context.Posts
             .AsNoTracking()
             .Include(post => post.Author)
+            .ExcludeContact()
             .AsQueryable();
 
         if (normalizedScope == PostListScope.Mine)
         {
-            var userId = _userManager.GetUserId(User);
             query = query.Where(post => post.AuthorId == userId);
             query = normalizedStatus switch
             {
@@ -75,14 +82,36 @@ public class PostsController : Controller
         else
         {
             query = query.Where(post => post.IsPublished);
+            if (!includeHidden)
+            {
+                query = query.Where(post => !post.IsHidden);
+            }
         }
 
-        query = normalizedSort == PostSortOrder.Oldest
-            ? query.OrderBy(post => post.CreatedAt)
-            : query.OrderByDescending(post => post.CreatedAt);
+        query = normalizedSort switch
+        {
+            PostSortOrder.Oldest => query.OrderBy(post => post.CreatedAt),
+            PostSortOrder.MostLiked => query
+                .OrderByDescending(post => post.Likes.Count)
+                .ThenByDescending(post => post.CreatedAt),
+            _ => query.OrderByDescending(post => post.CreatedAt)
+        };
 
         var posts = await query.ToListAsync();
         var currentUser = await _userManager.GetUserAsync(User);
+        var postIds = posts.Select(post => post.Id).ToList();
+        var (likeCounts, viewCounts) =
+            await EngagementQueries.CountPostsAsync(_context, postIds);
+        var likedPostIds = string.IsNullOrWhiteSpace(userId) || postIds.Count == 0
+            ? new HashSet<int>()
+            : (await _context.PostLikes
+                .AsNoTracking()
+                .Where(like =>
+                    like.UserId == userId &&
+                    postIds.Contains(like.PostId))
+                .Select(like => like.PostId)
+                .ToListAsync())
+                .ToHashSet();
 
         return View(new PostsIndexViewModel
         {
@@ -94,9 +123,15 @@ public class PostsController : Controller
                 : PostPublishFilter.Published,
             ShowUnpublished = normalizedScope == PostListScope.Mine &&
                 normalizedStatus != PostPublishFilter.Published,
+            ShowHidden = includeHidden,
+            IsAdmin = isAdmin,
             IsCompactGallery = isCompactGallery,
             IsAuthenticated = User.Identity?.IsAuthenticated == true,
-            CanWrite = currentUser?.EmailConfirmed == true
+            CanWrite = UserWriteAccess.CanWriteContent(currentUser),
+            CanLike = UserWriteAccess.CanWriteContent(currentUser),
+            LikeCounts = likeCounts,
+            ViewCounts = viewCounts,
+            LikedPostIds = likedPostIds
         });
     }
 
@@ -119,25 +154,77 @@ public class PostsController : Controller
             return NotFound();
         }
 
-        if (post.IsPublished)
+        if (PostCategories.IsContact(post.Category) &&
+            !User.IsInRole(RoleNames.Admin))
         {
-            return View(await BuildPostDetailsViewModelAsync(post));
+            return NotFound();
         }
 
-        if (User.Identity?.IsAuthenticated != true)
+        if (!await CanViewPostAsync(post))
         {
-            return Challenge();
+            if (User.Identity?.IsAuthenticated != true)
+            {
+                return !post.IsPublished
+                    ? Challenge()
+                    : NotFound();
+            }
+
+            if (post.IsPublished && post.IsHidden)
+            {
+                return NotFound();
+            }
+
+            return Forbid();
         }
 
-        var authorizationResult =
-            await _authorizationService.AuthorizeAsync(
-                User,
-                post,
-                PolicyNames.PostOwnerOrAdmin);
+        if (PostVisibility.IsPubliclyListed(post))
+        {
+            await RecordPostViewAsync(post.Id);
+        }
 
-        return authorizationResult.Succeeded
-            ? View(await BuildPostDetailsViewModelAsync(post))
-            : Forbid();
+        var viewModel = await BuildPostDetailsViewModelAsync(post);
+        SiteBranding.SetPostShareMetadata(ViewData, post, Url, _nutPlaceholders);
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Hide(int id)
+    {
+        var post = await _context.Posts
+            .FirstOrDefaultAsync(existing => existing.Id == id);
+        if (post is null || PostCategories.IsContact(post.Category))
+        {
+            return NotFound();
+        }
+
+        post.IsHidden = true;
+        post.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Post hidden.";
+        return RedirectToAction(nameof(Details), new { slug = post.Slug });
+    }
+
+    [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Unhide(int id)
+    {
+        var post = await _context.Posts
+            .FirstOrDefaultAsync(existing => existing.Id == id);
+        if (post is null || PostCategories.IsContact(post.Category))
+        {
+            return NotFound();
+        }
+
+        post.IsHidden = false;
+        post.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        TempData["StatusMessage"] = "Post unhidden.";
+        return RedirectToAction(nameof(Details), new { slug = post.Slug });
     }
 
     [HttpPost]
@@ -161,6 +248,7 @@ public class PostsController : Controller
 
         if (!ModelState.IsValid)
         {
+            SiteBranding.SetPostShareMetadata(ViewData, post, Url, _nutPlaceholders);
             return View(nameof(Details), await BuildPostDetailsViewModelAsync(post, model));
         }
 
@@ -346,13 +434,129 @@ public class PostsController : Controller
         return RedirectToAction(nameof(Details), new { slug });
     }
 
+    [HttpPost]
+    [EnableRateLimiting(RateLimitPolicyNames.Comments)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleLike(
+        string slug,
+        string? from,
+        string? scope,
+        string? sort,
+        string? status,
+        string? gallery,
+        bool showHidden = false)
+    {
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Challenge();
+        }
+
+        var post = await FindVisiblePostAsync(slug);
+        if (post is null)
+        {
+            return NotFound();
+        }
+
+        var existing = await _context.PostLikes.FirstOrDefaultAsync(like =>
+            like.PostId == post.Id && like.UserId == userId);
+        if (existing is null)
+        {
+            _context.PostLikes.Add(new PostLike
+            {
+                PostId = post.Id,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            _context.PostLikes.Remove(existing);
+        }
+
+        await _context.SaveChangesAsync();
+        if (string.Equals(from, "index", StringComparison.OrdinalIgnoreCase))
+        {
+            return RedirectToAction(
+                nameof(Index),
+                new
+                {
+                    scope,
+                    sort,
+                    status,
+                    gallery,
+                    showHidden = showHidden ? true : (bool?)null
+                });
+        }
+
+        return RedirectToAction(nameof(Details), new { slug = post.Slug });
+    }
+
+    [HttpPost]
+    [EnableRateLimiting(RateLimitPolicyNames.Comments)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleCommentLike(int id)
+    {
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Challenge();
+        }
+
+        var comment = await _context.PostComments
+            .Include(existing => existing.Post)
+            .FirstOrDefaultAsync(existing => existing.Id == id);
+        if (comment is null)
+        {
+            return NotFound();
+        }
+
+        if (!comment.Post.IsPublished)
+        {
+            var authorizationResult =
+                await _authorizationService.AuthorizeAsync(
+                    User,
+                    comment.Post,
+                    PolicyNames.PostOwnerOrAdmin);
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
+            }
+        }
+
+        var existing = await _context.PostCommentLikes
+            .FirstOrDefaultAsync(like =>
+                like.PostCommentId == comment.Id && like.UserId == userId);
+        if (existing is null)
+        {
+            _context.PostCommentLikes.Add(new PostCommentLike
+            {
+                PostCommentId = comment.Id,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            _context.PostCommentLikes.Remove(existing);
+        }
+
+        await _context.SaveChangesAsync();
+        return RedirectToAction(
+            nameof(Details),
+            new { slug = comment.Post.Slug });
+    }
+
+
     // GET: /Posts/Create
     public async Task<IActionResult> Create()
     {
         var isVerified = (await _authorizationService.AuthorizeAsync(
             User,
             PolicyNames.VerifiedEmail)).Succeeded;
-        ViewData["CanCreatePost"] = isVerified;
+        var currentUser = await _userManager.GetUserAsync(User);
+        ViewData["CanCreatePost"] = UserWriteAccess.CanWriteContent(currentUser);
+        ViewData["IsBlocked"] = currentUser?.IsBlocked == true;
         return View(new CreatePostViewModel());
     }
 
@@ -369,6 +573,13 @@ public class PostsController : Controller
         if (string.IsNullOrWhiteSpace(userId))
         {
             return Challenge();
+        }
+
+        if (model.Category == PostCategory.Contact)
+        {
+            ModelState.AddModelError(
+                nameof(model.Category),
+                "Contact messages must be sent from the Contact page.");
         }
 
         var slugAlreadyExists = await _context.Posts
@@ -490,6 +701,11 @@ public class PostsController : Controller
             return Forbid();
         }
 
+        if (PostCategories.IsContact(post.Category))
+        {
+            return NotFound();
+        }
+
         return View(new EditPostViewModel
         {
             Id = post.Id,
@@ -536,6 +752,11 @@ public class PostsController : Controller
         if (!authorizationResult.Succeeded)
         {
             return Forbid();
+        }
+
+        if (PostCategories.IsContact(existingPost.Category))
+        {
+            return NotFound();
         }
 
         model.CurrentImagePath = existingPost.ImagePath;
@@ -756,16 +977,36 @@ public class PostsController : Controller
             return null;
         }
 
-        if (post.IsPublished)
+        if (PostCategories.IsContact(post.Category))
+        {
+            return User.IsInRole(RoleNames.Admin) ? post : null;
+        }
+
+        if (await CanViewPostAsync(post))
         {
             return post;
+        }
+
+        return null;
+    }
+
+    private async Task<bool> CanViewPostAsync(Post post)
+    {
+        if (PostVisibility.IsPubliclyListed(post))
+        {
+            return true;
+        }
+
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return false;
         }
 
         var authorizationResult = await _authorizationService.AuthorizeAsync(
             User,
             post,
             PolicyNames.PostOwnerOrAdmin);
-        return authorizationResult.Succeeded ? post : null;
+        return authorizationResult.Succeeded;
     }
 
     private async Task<PostDetailsViewModel> BuildPostDetailsViewModelAsync(
@@ -776,23 +1017,40 @@ public class PostsController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         var isVerified = currentUser?.EmailConfirmed == true;
         var isAdmin = isVerified && User.IsInRole(RoleNames.Admin);
+        var canWrite = UserWriteAccess.CanWriteContent(currentUser);
         var comments = await _context.PostComments
             .AsNoTracking()
             .Include(comment => comment.Author)
+            .Include(comment => comment.Likes)
             .Where(comment => comment.PostId == post.Id)
             .OrderBy(comment => comment.CreatedAt)
             .ToListAsync();
+        var likeCount = await _context.PostLikes
+            .CountAsync(like => like.PostId == post.Id);
+        var viewCount = await _context.PostViews
+            .CountAsync(view => view.PostId == post.Id);
+        var isLiked = !string.IsNullOrWhiteSpace(userId) &&
+            await _context.PostLikes.AnyAsync(like =>
+                like.PostId == post.Id && like.UserId == userId);
 
         return new PostDetailsViewModel
         {
             Post = post,
-            CanComment = isVerified,
+            IsContactMessage = PostCategories.IsContact(post.Category),
+            CanComment = canWrite && !PostCategories.IsContact(post.Category),
             IsAuthenticated = User.Identity?.IsAuthenticated == true,
             CanManagePost = isVerified &&
                 OwnerAccess.IsAdminOrOwner(
                     isAdmin,
                     userId,
                     post.AuthorId),
+            CanModeratePost = isAdmin &&
+                !PostCategories.IsContact(post.Category),
+            CanLike = canWrite && !PostCategories.IsContact(post.Category),
+            IsCurrentUserBlocked = currentUser?.IsBlocked == true,
+            IsLikedByCurrentUser = isLiked,
+            LikeCount = likeCount,
+            ViewCount = viewCount,
             NewComment = newComment ?? new AddPostCommentViewModel(),
             Comments = PostCommentThreadMapper.Build(
                 comments,
@@ -800,6 +1058,35 @@ public class PostsController : Controller
                 isAdmin,
                 canReply: isVerified)
         };
+    }
+
+    private async Task RecordPostViewAsync(int postId)
+    {
+        var viewerKey = ViewerCookie.GetOrCreate(HttpContext);
+        var alreadyViewed = await _context.PostViews.AnyAsync(view =>
+            view.PostId == postId && view.ViewerKey == viewerKey);
+        if (alreadyViewed)
+        {
+            return;
+        }
+
+        var userId = _userManager.GetUserId(User);
+        _context.PostViews.Add(new PostView
+        {
+            PostId = postId,
+            UserId = string.IsNullOrWhiteSpace(userId) ? null : userId,
+            ViewerKey = viewerKey,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            _context.ChangeTracker.Clear();
+        }
     }
 
     private bool CanManageComment(PostComment comment)

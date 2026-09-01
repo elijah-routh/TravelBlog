@@ -533,6 +533,9 @@ public class BookClubsController : Controller
                 .ThenInclude(post => post.Author)
             .Include(existing => existing.DiscussionPosts
                 .Where(post => post.ClubBookId == null))
+                .ThenInclude(post => post.Likes)
+            .Include(existing => existing.DiscussionPosts
+                .Where(post => post.ClubBookId == null))
                 .ThenInclude(post => post.Poll)
                     .ThenInclude(poll => poll!.Options)
                         .ThenInclude(option => option.Votes)
@@ -609,7 +612,7 @@ public class BookClubsController : Controller
                 club.Slug,
                 userId,
                 isAdmin,
-                isAdmin || isMember,
+                isVerified && (isAdmin || isMember),
                 normalizedSort)
         };
     }

@@ -3,6 +3,12 @@
 @{
     ViewData["Title"] = "Create Post";
     var canCreatePost = ViewData["CanCreatePost"] is true;
+    var isBlocked = ViewData["IsBlocked"] is true;
+    var categoryOptions = PostCategories.EditorialCategories()
+        .Select(category => new SelectListItem(
+            PostCategories.GetDisplayName(category),
+            ((int)category).ToString()))
+        .ToList();
 }
 
 <section class="content-section">
@@ -11,7 +17,13 @@
             <div class="col-sm-12 col-lg-8">
                 <h1 class="mb-4">Create a New Post</h1>
 
-                @if (!canCreatePost)
+                @if (isBlocked)
+                {
+                    <div class="alert alert-danger" role="status">
+                        Your account is blocked and cannot create posts.
+                    </div>
+                }
+                else if (!canCreatePost)
                 {
                     <div class="alert alert-warning" role="status">
                         Verify your email before creating a post.
@@ -83,7 +95,7 @@
 
                         <select
                             asp-for="Category"
-                            asp-items="Html.GetEnumSelectList<PostCategory>()"
+                            asp-items="categoryOptions"
                             class="form-select">
 
                             <option value="">

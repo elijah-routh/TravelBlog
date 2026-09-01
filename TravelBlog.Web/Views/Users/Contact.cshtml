@@ -1,0 +1,67 @@
+@using TravelBlog.Web.Services
+@model IReadOnlyCollection<Post>
+@{
+    ViewData["Title"] = "Contact Messages";
+}
+
+<section class="content-section">
+    <div class="container">
+        <partial name="_AdminNav" />
+
+        <h1>Contact Messages</h1>
+        <p class="text-muted">
+            Messages submitted from the public contact form.
+        </p>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info mb-0">
+                No contact messages yet.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>From</th>
+                            <th>Received</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var message in Model)
+                        {
+                            <tr>
+                                <td>@message.Title</td>
+                                <td>
+                                    @message.Author.DisplayName
+                                    @if (!string.IsNullOrWhiteSpace(message.Author.Email))
+                                    {
+                                        <span class="text-muted">
+                                            · @message.Author.Email
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @RelativeTimeFormatter.FormatAgo(message.CreatedAt)
+                                </td>
+                                <td class="text-end">
+                                    <a
+                                        asp-controller="Posts"
+                                        asp-action="Details"
+                                        asp-route-slug="@message.Slug"
+                                        class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

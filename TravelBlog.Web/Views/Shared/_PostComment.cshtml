@@ -10,47 +10,59 @@
     }
 </p>
 
-@if (Model.CanEdit || Model.CanDelete || Model.CanReply)
-{
-    <div class="comment-actions mb-2">
-        @if (Model.CanEdit)
+<div class="comment-actions mb-2">
+    @{
+        var commentLikeButton = new LikeButtonViewModel
         {
-            <a
-                asp-controller="Posts"
-                asp-action="EditComment"
-                asp-route-id="@Model.Id"
-                class="icon-action"
-                title="Edit comment"
-                aria-label="Edit comment">
-                &#9998;
-            </a>
-        }
-        @if (Model.CanDelete)
-        {
-            <a
-                asp-controller="Posts"
-                asp-action="DeleteComment"
-                asp-route-id="@Model.Id"
-                class="icon-action icon-action-danger"
-                title="Delete comment"
-                aria-label="Delete comment">
-                &#128465;
-            </a>
-        }
-        @if (Model.CanReply)
-        {
-            <button
-                type="button"
-                class="reply-toggle"
-                data-bs-toggle="collapse"
-                data-bs-target="#comment-reply-@Model.Id"
-                aria-expanded="false"
-                aria-controls="comment-reply-@Model.Id">
-                Reply
-            </button>
-        }
-    </div>
-}
+            Count = Model.LikeCount,
+            IsLiked = Model.IsLikedByCurrentUser,
+            CanLike = Model.CanLike,
+            Controller = "Posts",
+            Action = "ToggleCommentLike",
+            RouteValues = new Dictionary<string, string>
+            {
+                ["id"] = Model.Id.ToString()
+            }
+        };
+    }
+    <partial name="_LikeButton" model="commentLikeButton" />
+    @if (Model.CanEdit)
+    {
+        <a
+            asp-controller="Posts"
+            asp-action="EditComment"
+            asp-route-id="@Model.Id"
+            class="icon-action"
+            title="Edit comment"
+            aria-label="Edit comment">
+            &#9998;
+        </a>
+    }
+    @if (Model.CanDelete)
+    {
+        <a
+            asp-controller="Posts"
+            asp-action="DeleteComment"
+            asp-route-id="@Model.Id"
+            class="icon-action icon-action-danger"
+            title="Delete comment"
+            aria-label="Delete comment">
+            &#128465;
+        </a>
+    }
+    @if (Model.CanReply)
+    {
+        <button
+            type="button"
+            class="reply-toggle"
+            data-bs-toggle="collapse"
+            data-bs-target="#comment-reply-@Model.Id"
+            aria-expanded="false"
+            aria-controls="comment-reply-@Model.Id">
+            Reply
+        </button>
+    }
+</div>
 
 @if (Model.CanReply)
 {

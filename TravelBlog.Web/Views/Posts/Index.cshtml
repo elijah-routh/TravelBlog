@@ -1,6 +1,7 @@
 @using Microsoft.AspNetCore.Identity
 @using TravelBlog.Web.Authorization
 @using TravelBlog.Web.Models
+@using TravelBlog.Web.Services
 @model PostsIndexViewModel
 @inject UserManager<ApplicationUser> UserManager
 
@@ -10,13 +11,24 @@
     var isMine = Model.Scope == PostListScope.Mine;
     var allLinkClass = isMine ? "posts-mini-link" : "posts-mini-link is-active";
     var mineLinkClass = isMine ? "posts-mini-link is-active" : "posts-mini-link";
-    var galleryRoute = Model.IsCompactGallery ? PostGallerySize.Compact : null;
+    var galleryRoute = Model.IsCompactGallery
+        ? null
+        : PostGallerySize.Default;
+    var hiddenRoute = Model.ShowHidden ? true : (bool?)null;
     var postColumnClass = Model.IsCompactGallery
         ? "col-6 col-md-4 col-lg-3"
         : "col-sm-12 col-md-6 col-lg-4";
     var postGridClass = Model.IsCompactGallery
         ? "row g-3 posts-grid posts-grid--compact"
         : "row g-4 posts-grid";
+    var summaryLimitXs =
+        PostCardSummaryLimits.For(PostCardBreakpoint.ExtraSmall, Model.IsCompactGallery);
+    var summaryLimitSm =
+        PostCardSummaryLimits.For(PostCardBreakpoint.Small, Model.IsCompactGallery);
+    var summaryLimitMd =
+        PostCardSummaryLimits.For(PostCardBreakpoint.Medium, Model.IsCompactGallery);
+    var summaryLimitLg =
+        PostCardSummaryLimits.For(PostCardBreakpoint.Large, Model.IsCompactGallery);
 }
 
 <section class="content-section">
@@ -48,6 +60,7 @@
                             asp-route-scope="@PostListScope.All"
                             asp-route-sort="@Model.Sort"
                             asp-route-gallery="@galleryRoute"
+                            asp-route-showHidden="@hiddenRoute"
                             class="@allLinkClass"
                             aria-current="@(isMine ? null : "page")">
                             All posts
@@ -58,6 +71,7 @@
                             asp-route-sort="@Model.Sort"
                             asp-route-status="@(Model.ShowUnpublished ? PostPublishFilter.Both : PostPublishFilter.Published)"
                             asp-route-gallery="@galleryRoute"
+                            asp-route-showHidden="@hiddenRoute"
                             class="@mineLinkClass"
                             aria-current="@(isMine ? "page" : null)">
                             My posts
@@ -103,6 +117,15 @@
                             name="gallery"
                             id="posts-gallery"
                             value="@(Model.IsCompactGallery ? PostGallerySize.Compact : PostGallerySize.Default)" />
+
+                        @if (Model.IsAdmin && !isMine)
+                        {
+                            <input
+                                type="hidden"
+                                name="showHidden"
+                                id="posts-hidden"
+                                value="@(Model.ShowHidden ? "true" : "false")" />
+                        }
 
                         <p class="posts-mini-panel__label">Sort by</p>
 
@@ -158,11 +181,37 @@
                                 Oldest first
                             </label>
                         </div>
+                        <div class="form-check">
+                            @if (Model.Sort == PostSortOrder.MostLiked)
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="radio"
+                                    name="sort"
+                                    id="sort-liked"
+                                    value="@PostSortOrder.MostLiked"
+                                    checked
+                                    onchange="this.form.submit()" />
+                            }
+                            else
+                            {
+                                <input
+                                    class="form-check-input"
+                                    type="radio"
+                                    name="sort"
+                                    id="sort-liked"
+                                    value="@PostSortOrder.MostLiked"
+                                    onchange="this.form.submit()" />
+                            }
+                            <label class="form-check-label" for="sort-liked">
+                                Most liked
+                            </label>
+                        </div>
 
                         <div class="posts-mini-panel__divider"></div>
                         <p class="posts-mini-panel__label">Gallery</p>
                         <div class="form-check form-switch mb-0">
-                            @if (Model.IsCompactGallery)
+                            @if (!Model.IsCompactGallery)
                             {
                                 <input
                                     class="form-check-input"
@@ -170,7 +219,7 @@
                                     role="switch"
                                     id="compact-gallery"
                                     checked
-                                    onchange="document.getElementById('posts-gallery').value = this.checked ? '@PostGallerySize.Compact' : '@PostGallerySize.Default'; this.form.submit();" />
+                                    onchange="document.getElementById('posts-gallery').value = this.checked ? '@PostGallerySize.Default' : '@PostGallerySize.Compact'; this.form.submit();" />
                             }
                             else
                             {
@@ -179,12 +228,12 @@
                                     type="checkbox"
                                     role="switch"
                                     id="compact-gallery"
-                                    onchange="document.getElementById('posts-gallery').value = this.checked ? '@PostGallerySize.Compact' : '@PostGallerySize.Default'; this.form.submit();" />
+                                    onchange="document.getElementById('posts-gallery').value = this.checked ? '@PostGallerySize.Default' : '@PostGallerySize.Compact'; this.form.submit();" />
                             }
                             <label
                                 class="form-check-label"
                                 for="compact-gallery">
-                                Smaller cards
+                                Larger cards
                             </label>
                         </div>
 
@@ -218,6 +267,37 @@
                                 </label>
                             </div>
                         }
+
+                        @if (Model.IsAdmin && !isMine)
+                        {
+                            <div class="posts-mini-panel__divider"></div>
+                            <div class="form-check form-switch mb-0">
+                                @if (Model.ShowHidden)
+                                {
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="show-hidden"
+                                        checked
+                                        onchange="document.getElementById('posts-hidden').value = this.checked ? 'true' : 'false'; this.form.submit();" />
+                                }
+                                else
+                                {
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="show-hidden"
+                                        onchange="document.getElementById('posts-hidden').value = this.checked ? 'true' : 'false'; this.form.submit();" />
+                                }
+                                <label
+                                    class="form-check-label"
+                                    for="show-hidden">
+                                    Show hidden
+                                </label>
+                            </div>
+                        }
                     </form>
                 </div>
             </div>
@@ -241,41 +321,33 @@
             <div class="@postGridClass">
                 @foreach (var post in Model.Posts)
                 {
+                    var imagePath = SiteBranding.PostCardImage(
+                        post.ImagePath,
+                        post.Id,
+                        Url,
+                        NutPlaceholders);
+                    var isPlaceholderImage =
+                        SiteBranding.IsPlaceholderImage(post.ImagePath);
+
                     <div class="@postColumnClass">
                         <article class="card travel-card">
-                            @if (!string.IsNullOrWhiteSpace(post.ImagePath))
-                            {
-                                <img
-                                    src="@Url.Content(post.ImagePath)"
-                                    class="card-img-top"
-                                    alt="@post.Title" />
-                            }
+                            <img
+                                src="@imagePath"
+                                class="card-img-top@(isPlaceholderImage ? " post-card-image--placeholder" : null)"
+                                alt="@post.Title" />
 
                             <div class="card-body d-flex flex-column">
-                                <div class="d-flex flex-wrap gap-2 mb-2">
-                                    <span class="badge text-bg-primary">
-                                        @Html.DisplayFor(
-                                            _ => post.Category
-                                        )
-                                    </span>
-
-                                    @if (post.IsPublished)
-                                    {
-                                        <span class="badge text-bg-success">
-                                            Published
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge text-bg-secondary">
-                                            Draft
-                                        </span>
-                                    }
-                                </div>
-
                                 <h2 class="card-title h4">
                                     @post.Title
                                 </h2>
+                                @if (post.IsHidden)
+                                {
+                                    <p class="mb-2">
+                                        <span class="badge bg-warning text-dark">
+                                            Hidden
+                                        </span>
+                                    </p>
+                                }
                                 <p class="small text-muted mb-2">
                                     By @post.Author.DisplayName
                                 </p>
@@ -283,38 +355,95 @@
                                 @if (!string.IsNullOrWhiteSpace(post.Summary))
                                 {
                                     <p class="card-text">
-                                        @post.Summary
+                                        <span class="d-sm-none">
+                                            @TextPreview.Truncate(
+                                                post.Summary,
+                                                summaryLimitXs)
+                                        </span>
+                                        <span class="d-none d-sm-inline d-md-none">
+                                            @TextPreview.Truncate(
+                                                post.Summary,
+                                                summaryLimitSm)
+                                        </span>
+                                        <span class="d-none d-md-inline d-lg-none">
+                                            @TextPreview.Truncate(
+                                                post.Summary,
+                                                summaryLimitMd)
+                                        </span>
+                                        <span class="d-none d-lg-inline">
+                                            @TextPreview.Truncate(
+                                                post.Summary,
+                                                summaryLimitLg)
+                                        </span>
                                     </p>
                                 }
 
-                                <p class="small text-muted">
-                                    Created @post.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy h:mm tt")
+                                <p class="small text-muted mb-2">
+                                    @RelativeTimeFormatter.FormatAgo(post.CreatedAt)
                                 </p>
 
-                                <div class="mt-auto d-flex flex-wrap gap-2">
-                                    <a
-                                        asp-action="Details"
-                                        asp-route-slug="@post.Slug"
-                                        class="btn btn-outline-primary">
-                                        View
-                                    </a>
+                                <div class="mt-auto post-card-actions">
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <a
+                                            asp-action="Details"
+                                            asp-route-slug="@post.Slug"
+                                            class="btn btn-outline-primary btn-sm">
+                                            View
+                                        </a>
+                                        @{
+                                            var likeRoutes = new Dictionary<string, string>
+                                            {
+                                                ["slug"] = post.Slug,
+                                                ["from"] = "index",
+                                                ["scope"] = Model.Scope,
+                                                ["sort"] = Model.Sort,
+                                                ["status"] = Model.Status
+                                            };
+                                            if (!Model.IsCompactGallery)
+                                            {
+                                                likeRoutes["gallery"] =
+                                                    PostGallerySize.Default;
+                                            }
+                                            if (Model.ShowHidden)
+                                            {
+                                                likeRoutes["showHidden"] = "true";
+                                            }
+                                            var cardLikeButton = new LikeButtonViewModel
+                                            {
+                                                Count = Model.LikeCounts.GetValueOrDefault(post.Id),
+                                                IsLiked = Model.LikedPostIds.Contains(post.Id),
+                                                CanLike = Model.CanLike,
+                                                Controller = "Posts",
+                                                Action = "ToggleLike",
+                                                RouteValues = likeRoutes
+                                            };
+                                            var viewCount =
+                                                Model.ViewCounts.GetValueOrDefault(post.Id);
+                                        }
+                                        <partial name="_LikeButton" model="cardLikeButton" />
+                                        <span class="post-view-count small text-muted">
+                                            @viewCount @(viewCount == 1 ? "view" : "views")
+                                        </span>
+                                    </div>
 
                                     @if (Model.CanWrite &&
                                         (User.IsInRole(RoleNames.Admin) ||
                                          post.AuthorId == UserManager.GetUserId(User)))
                                     {
-                                        <a
-                                            asp-action="Edit"
-                                            asp-route-id="@post.Id"
-                                            class="icon-action"
-                                            title="Edit post"
-                                            aria-label="Edit @post.Title">&#9998;</a>
-                                        <a
-                                            asp-action="Delete"
-                                            asp-route-id="@post.Id"
-                                            class="icon-action icon-action-danger"
-                                            title="Delete post"
-                                            aria-label="Delete @post.Title">&#128465;</a>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a
+                                                asp-action="Edit"
+                                                asp-route-id="@post.Id"
+                                                class="icon-action"
+                                                title="Edit post"
+                                                aria-label="Edit @post.Title">&#9998;</a>
+                                            <a
+                                                asp-action="Delete"
+                                                asp-route-id="@post.Id"
+                                                class="icon-action icon-action-danger"
+                                                title="Delete post"
+                                                aria-label="Delete @post.Title">&#128465;</a>
+                                        </div>
                                     }
                                 </div>
                             </div>

@@ -20,6 +20,12 @@
             : null;
     var pageBackgroundClass =
         PageBackgrounds.GetBodyClass(ViewData[PageBackgrounds.ViewDataKey]);
+    var shareImagePath = ViewData[SiteBranding.ShareImageViewDataKey] as string
+        ?? Url.Content(SiteBranding.NutLogoPath)!;
+    var shareDescription = ViewData[SiteBranding.ShareDescriptionViewDataKey] as string
+        ?? SiteBranding.DefaultShareDescription;
+    var absoluteShareImage = SiteBranding.ToAbsoluteUrl(Context.Request, shareImagePath);
+    var shareUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -35,6 +41,25 @@
         content="Giant Lampoon — literature and stuff, fiction and satire, and other writing." />
 
     <title>@documentTitle</title>
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="@Url.Content(SiteBranding.NutLogoSmallPath)" />
+    <link
+        rel="apple-touch-icon"
+        href="@Url.Content(SiteBranding.NutLogoSmallPath)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Giant Lampoon" />
+    <meta property="og:title" content="@documentTitle" />
+    <meta property="og:description" content="@shareDescription" />
+    <meta property="og:image" content="@absoluteShareImage" />
+    <meta property="og:url" content="@shareUrl" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@documentTitle" />
+    <meta name="twitter:description" content="@shareDescription" />
+    <meta name="twitter:image" content="@absoluteShareImage" />
 
     <!-- Bootstrap CSS stored in wwwroot/lib -->
     <link
@@ -86,7 +111,8 @@
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
                             <a
-                                class="nav-link"
+                                class="@MainNav.LinkClass(ViewContext, "home")"
+                                aria-current="@MainNav.AriaCurrent(ViewContext, "home")"
                                 asp-controller="Home"
                                 asp-action="Index">
                                 Home
@@ -94,7 +120,8 @@
                         </li>
                         <li class="nav-item">
                             <a
-                                class="nav-link"
+                                class="@MainNav.LinkClass(ViewContext, "book-clubs")"
+                                aria-current="@MainNav.AriaCurrent(ViewContext, "book-clubs")"
                                 asp-controller="BookClubs"
                                 asp-action="Index">
                                 Book Clubs
@@ -103,7 +130,8 @@
 
                         <li class="nav-item">
                             <a
-                                class="nav-link"
+                                class="@MainNav.LinkClass(ViewContext, "posts")"
+                                aria-current="@MainNav.AriaCurrent(ViewContext, "posts")"
                                 asp-controller="Posts"
                                 asp-action="Index">
                                 Posts
@@ -114,7 +142,8 @@
                         {
                             <li class="nav-item">
                                 <a
-                                    class="nav-link"
+                                    class="@MainNav.LinkClass(ViewContext, "create")"
+                                    aria-current="@MainNav.AriaCurrent(ViewContext, "create")"
                                     asp-controller="Posts"
                                     asp-action="Create">
                                     Create
@@ -122,14 +151,46 @@
                             </li>
                             @if (User.IsInRole(RoleNames.Admin))
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Users" asp-action="Index">Users</a></li>
+                                <li class="nav-item">
+                                    <a
+                                        class="@MainNav.LinkClass(ViewContext, "admin")"
+                                        aria-current="@MainNav.AriaCurrent(ViewContext, "admin")"
+                                        asp-controller="Users"
+                                        asp-action="Index">
+                                        Admin
+                                    </a>
+                                </li>
                             }
-                            <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index">Profile</a></li>
+                            <li class="nav-item">
+                                <a
+                                    class="@MainNav.LinkClass(ViewContext, "profile")"
+                                    aria-current="@MainNav.AriaCurrent(ViewContext, "profile")"
+                                    asp-area="Identity"
+                                    asp-page="/Account/Manage/Index">
+                                    Profile
+                                </a>
+                            </li>
                         }
                         else
                         {
-                            <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a></li>
+                            <li class="nav-item">
+                                <a
+                                    class="@MainNav.LinkClass(ViewContext, "register")"
+                                    aria-current="@MainNav.AriaCurrent(ViewContext, "register")"
+                                    asp-area="Identity"
+                                    asp-page="/Account/Register">
+                                    Register
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a
+                                    class="@MainNav.LinkClass(ViewContext, "login")"
+                                    aria-current="@MainNav.AriaCurrent(ViewContext, "login")"
+                                    asp-area="Identity"
+                                    asp-page="/Account/Login">
+                                    Login
+                                </a>
+                            </li>
                         }
 
                     </ul>
@@ -175,6 +236,14 @@
 
     <footer class="site-footer">
         <div class="container">
+            <nav
+                class="site-footer__links"
+                aria-label="Footer">
+                <a asp-controller="Home" asp-action="Faq">FAQ</a>
+                <a asp-controller="Home" asp-action="Contact">Contact</a>
+                <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+            </nav>
+
             <p>
                 &copy; @DateTime.Now.Year Giant Lampoon.
                 All rights reserved.

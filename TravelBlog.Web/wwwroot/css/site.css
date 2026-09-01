@@ -30,6 +30,22 @@ body > main {
     font-weight: 600;
 }
 
+#mainNavigation .nav-link {
+    position: relative;
+    padding-bottom: 0.4rem;
+}
+
+#mainNavigation .nav-link.is-active::after {
+    content: "";
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.1rem;
+    left: 0.5rem;
+    height: 2px;
+    border-radius: 1px;
+    background: currentColor;
+}
+
 /* Hero */
 .hero {
     position: relative;
@@ -457,40 +473,74 @@ button.posts-mini-link {
     display: flex;
     flex: 1;
     flex-direction: column;
+    gap: 0.5rem;
     min-height: 0;
+    overflow: hidden;
     padding: 1rem;
 }
 
-.editorial-row-card .card-title {
-    margin-bottom: 0.65rem;
+.editorial-row-card .card-title,
+.editorial-row-card__title {
+    flex-shrink: 0;
+    margin-bottom: 0;
     font-size: 1.2rem;
-
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    line-height: 1.3;
+    word-break: break-word;
 }
 
-.editorial-row-card .card-text {
-    margin-bottom: 1rem;
+.editorial-row-card__author {
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+.editorial-row-card .card-text,
+.editorial-row-card__summary {
+    flex: 1 1 0;
+    min-height: 0;
+    margin-bottom: 0;
     overflow: hidden;
     color: #5a5a5a;
     font-size: 0.9rem;
     line-height: 1.5;
-
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    word-break: break-word;
 }
 
-.editorial-row-card .btn {
-    align-self: flex-start;
+.editorial-row-card__footer {
+    flex: 0 0 auto;
     margin-top: auto;
+}
+
+.editorial-row-card__cta {
+    display: inline-block;
 }
 
 /* About */
 .about-section {
     background: #e7dfd0;
+}
+
+.home-footer {
+    padding-top: 40px;
+    padding-bottom: 50px;
+}
+
+.home-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem 1.5rem;
+}
+
+.home-footer__links a {
+    color: #4a4a4a;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.home-footer__links a:hover,
+.home-footer__links a:focus-visible {
+    color: #171717;
+    text-decoration: underline;
 }
 
 .author-photo {
@@ -518,6 +568,20 @@ button.posts-mini-link {
 .post-detail-image {
     max-height: 520px;
     object-fit: cover;
+}
+
+.travel-card img.post-card-image--placeholder,
+.editorial-row-card .card-img-top.post-card-image--placeholder {
+    object-fit: cover;
+    padding: 0;
+    background: #f5f2e8;
+}
+
+.post-detail-image.post-card-image--placeholder {
+    max-height: 560px;
+    object-fit: contain;
+    padding: 2rem;
+    background: #f5f2e8;
 }
 
 .post-content {
@@ -753,10 +817,81 @@ button.posts-mini-link {
     padding-top: 1rem;
 }
 
-.comment-actions {
+.comment-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.like-form {
+    display: inline-flex;
+}
+
+.like-action {
+    display: inline-flex;
+    min-width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.28rem;
+    padding: 0 0.45rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #646464;
+    font-size: 0.8rem;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.like-action:hover {
+    background: #eee8dc;
+    color: #252525;
+}
+
+.like-action.is-liked {
+    color: #a2352d;
+}
+
+.like-action.is-liked:hover {
+    background: #fff0ee;
+    color: #8a2c25;
+}
+
+.like-action.is-static {
+    cursor: default;
+}
+
+.like-action.is-static:hover {
+    background: transparent;
+    color: #646464;
+}
+
+.like-action.is-static.is-liked:hover {
+    color: #a2352d;
+}
+
+.post-engagement {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.65rem;
+}
+
+.post-view-count {
+    color: #6c757d;
+    line-height: 1;
+}
+
+.post-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.post-card-actions .like-form,
+.post-card-actions .like-action {
+    flex: 0 0 auto;
 }
 
 .icon-action,
@@ -1067,6 +1202,74 @@ body:has(.content-section--account) .site-footer {
 
 .site-footer p {
     margin: 0;
+}
+
+.site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.site-footer__links a {
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.site-footer__links a:hover,
+.site-footer__links a:focus-visible {
+    color: #f0e6d2;
+    text-decoration: underline;
+}
+
+.faq-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.faq-entry__question {
+    margin-bottom: 0.5rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.faq-entry__answer {
+    margin: 0;
+    color: #4a4a4a;
+    line-height: 1.65;
+    white-space: pre-line;
+}
+
+.faq-contact-note {
+    color: #646464;
+}
+
+.admin-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-nav__link {
+    color: #4a4a4a;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.admin-nav__link:hover,
+.admin-nav__link:focus-visible {
+    color: #171717;
+    text-decoration: underline;
+}
+
+.admin-nav__link.is-active {
+    color: #171717;
+    text-decoration: underline;
 }
 
 /* Responsive */

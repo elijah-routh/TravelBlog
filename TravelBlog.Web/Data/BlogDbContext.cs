@@ -37,6 +37,15 @@ public class BlogDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<PostComment> PostComments => Set<PostComment>();
 
+    public DbSet<PostLike> PostLikes => Set<PostLike>();
+
+    public DbSet<PostCommentLike> PostCommentLikes => Set<PostCommentLike>();
+
+    public DbSet<DiscussionPostLike> DiscussionPostLikes =>
+        Set<DiscussionPostLike>();
+
+    public DbSet<PostView> PostViews => Set<PostView>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -212,6 +221,70 @@ public class BlogDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany(comment => comment.Replies)
                 .HasForeignKey(comment => comment.ParentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PostLike>(entity =>
+        {
+            entity.HasIndex(like => new { like.PostId, like.UserId })
+                .IsUnique();
+
+            entity.HasOne(like => like.Post)
+                .WithMany(post => post.Likes)
+                .HasForeignKey(like => like.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(like => like.User)
+                .WithMany(user => user.PostLikes)
+                .HasForeignKey(like => like.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PostCommentLike>(entity =>
+        {
+            entity.HasIndex(like => new { like.PostCommentId, like.UserId })
+                .IsUnique();
+
+            entity.HasOne(like => like.PostComment)
+                .WithMany(comment => comment.Likes)
+                .HasForeignKey(like => like.PostCommentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(like => like.User)
+                .WithMany(user => user.PostCommentLikes)
+                .HasForeignKey(like => like.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<DiscussionPostLike>(entity =>
+        {
+            entity.HasIndex(like => new { like.DiscussionPostId, like.UserId })
+                .IsUnique();
+
+            entity.HasOne(like => like.DiscussionPost)
+                .WithMany(post => post.Likes)
+                .HasForeignKey(like => like.DiscussionPostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(like => like.User)
+                .WithMany(user => user.DiscussionPostLikes)
+                .HasForeignKey(like => like.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PostView>(entity =>
+        {
+            entity.HasIndex(view => new { view.PostId, view.ViewerKey })
+                .IsUnique();
+
+            entity.HasOne(view => view.Post)
+                .WithMany(post => post.Views)
+                .HasForeignKey(view => view.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(view => view.User)
+                .WithMany(user => user.PostViews)
+                .HasForeignKey(view => view.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

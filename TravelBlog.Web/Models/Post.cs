@@ -55,6 +55,9 @@ public class Post
     [Display(Name = "Published")]
     public bool IsPublished { get; set; }
 
+    [Display(Name = "Hidden")]
+    public bool IsHidden { get; set; }
+
     [Display(Name = "Created")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -62,4 +65,8 @@ public class Post
     public DateTime? UpdatedAt { get; set; }
 
     public ICollection<PostComment> Comments { get; set; } = [];
+
+    public ICollection<PostLike> Likes { get; set; } = [];
+
+    public ICollection<PostView> Views { get; set; } = [];
 }

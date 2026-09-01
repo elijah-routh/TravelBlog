@@ -148,6 +148,22 @@ public sealed class AccountAnonymizationService(
             var votes = await context.DiscussionPollVotes
                 .Where(vote => vote.UserId == targetId)
                 .ExecuteDeleteAsync(cancellationToken);
+            await context.PostLikes
+                .Where(like => like.UserId == targetId)
+                .ExecuteDeleteAsync(cancellationToken);
+            await context.PostCommentLikes
+                .Where(like => like.UserId == targetId)
+                .ExecuteDeleteAsync(cancellationToken);
+            await context.DiscussionPostLikes
+                .Where(like => like.UserId == targetId)
+                .ExecuteDeleteAsync(cancellationToken);
+            await context.PostViews
+                .Where(view => view.UserId == targetId)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        view => view.UserId,
+                        (string?)null),
+                    cancellationToken);
 
             var identityResult = await userManager.DeleteAsync(target);
             if (!identityResult.Succeeded)

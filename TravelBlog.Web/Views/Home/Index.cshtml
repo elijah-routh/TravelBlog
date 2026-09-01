@@ -1,4 +1,5 @@
 ﻿@model TravelBlog.Web.Models.HomeIndexViewModel
+@using TravelBlog.Web.Services
 
 @{
     ViewData["Title"] = "Home";
@@ -24,7 +25,7 @@
 
     <div class="hero-content">
         <p class="text-uppercase mb-2">
-            Literature, fiction, and satire
+            Books, fiction, and satire
         </p>
 
         <h1>Giant Lampoon</h1>
@@ -94,42 +95,49 @@
 
                     @foreach (var post in category.Posts)
                     {
-                        var imagePath =
-                            string.IsNullOrWhiteSpace(post.ImagePath)
-                                ? Url.Content(
-                                    "~/images/CountryPictures/ColcaCanyonIcon.jpg"
-                                )
-                                : Url.Content(post.ImagePath);
+                        var imagePath = SiteBranding.PostCardImage(
+                            post.ImagePath,
+                            post.Id,
+                            Url,
+                            NutPlaceholders);
+                        var isPlaceholderImage =
+                            SiteBranding.IsPlaceholderImage(post.ImagePath);
 
                         <article class="card travel-card editorial-row-card">
                             <img
                                 src="@imagePath"
-                                class="card-img-top"
+                                class="card-img-top@(isPlaceholderImage ? " post-card-image--placeholder" : null)"
                                 alt="@post.Title" />
 
                             <div class="card-body d-flex flex-column">
-                                <h3 class="card-title">
+                                <h3 class="card-title editorial-row-card__title">
                                     @post.Title
                                 </h3>
-                                <p class="small text-muted">
+                                <p class="editorial-row-card__author small text-muted">
                                     By @post.Author.DisplayName
                                 </p>
 
-                                <p class="card-text">
-                                    @(
-                                        string.IsNullOrWhiteSpace(post.Summary)
-                                            ? "Read the full post to learn more."
-                                            : post.Summary
-                                    )
+                                <p class="card-text editorial-row-card__summary">
+                                    @{
+                                        var summaryText =
+                                            string.IsNullOrWhiteSpace(post.Summary)
+                                                ? "Read the full post to learn more."
+                                                : post.Summary;
+                                    }
+                                    @TextPreview.Truncate(
+                                        summaryText,
+                                        EditorialCardSummaryLimits.ForTitle(post.Title))
                                 </p>
 
-                                <a
-                                    asp-controller="Posts"
-                                    asp-action="Details"
-                                    asp-route-slug="@post.Slug"
-                                    class="btn btn-outline-primary mt-auto">
-                                    Read Post
-                                </a>
+                                <div class="editorial-row-card__footer">
+                                    <a
+                                        asp-controller="Posts"
+                                        asp-action="Details"
+                                        asp-route-slug="@post.Slug"
+                                        class="btn btn-outline-primary editorial-row-card__cta">
+                                        Read Post
+                                    </a>
+                                </div>
                             </div>
                         </article>
                     }
@@ -164,23 +172,42 @@
                 <h2>About Giant Lampoon</h2>
 
                 <p>
-                    Giant Lampoon is about literature and stuff.
+                    Giant Lampoon is about things. Things that make you laugh and things. Things about stories. Other things. Many things.
                 </p>
 
                 <p>
                     Join the totally cool book club!
                 </p>
 
-                <a
-                    href="#literature-and-stuff"
-                    class="btn btn-dark">
-                    Browse the Archive
-                </a>
+                <div class="d-flex flex-wrap gap-2">
+                    <a
+                        asp-controller="Posts"
+                        asp-action="Index"
+                        class="btn btn-dark">
+                        Browse
+                    </a>
+                    <a
+                        asp-controller="BookClubs"
+                        asp-action="Index"
+                        class="btn btn-dark">
+                        Clubs
+                    </a>
+                </div>
             </div>
 
         </div>
     </div>
 </section>
+
+@* <footer class="content-section home-footer">
+    <div class="container text-center">
+        <nav class="home-footer__links" aria-label="Site pages">
+            <a asp-controller="Home" asp-action="Faq">FAQ</a>
+            <a asp-controller="Home" asp-action="Contact">Contact</a>
+            <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </nav>
+    </div>
+</footer> *@
 
 @* <!-- Newsletter -->
 <section class="content-section">

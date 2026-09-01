@@ -35,7 +35,8 @@ public sealed class VerifiedMutationFilter(
             "ClubBooks",
             "DiscussionPosts",
             "DiscussionPolls",
-            "Users"
+            "Users",
+            "Home"
         };
     private static readonly HashSet<string> WritePageActions =
         new(StringComparer.OrdinalIgnoreCase)
@@ -75,7 +76,7 @@ public sealed class VerifiedMutationFilter(
         var result = await authorizationService.AuthorizeAsync(
             context.HttpContext.User,
             resource: null,
-            PolicyNames.VerifiedEmail);
+            PolicyNames.ActiveAuthor);
         if (!result.Succeeded)
         {
             context.Result = context.HttpContext.User.Identity?.IsAuthenticated

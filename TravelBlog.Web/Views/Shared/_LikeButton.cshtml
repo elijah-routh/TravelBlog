@@ -1,0 +1,82 @@
+@model LikeButtonViewModel
+
+@{
+    var likeLabel = Model.IsLiked ? "Unlike" : "Like";
+    var countLabel = Model.Count == 1 ? "1 like" : $"{Model.Count} likes";
+}
+
+@if (Model.CanLike)
+{
+    <form
+        asp-controller="@Model.Controller"
+        asp-action="@Model.Action"
+        asp-all-route-data="Model.RouteValues"
+        method="post"
+        class="like-form">
+        <button
+            type="submit"
+            class="like-action@(Model.IsLiked ? " is-liked" : "")"
+            title="@likeLabel"
+            aria-pressed="@(Model.IsLiked ? "true" : "false")"
+            aria-label="@likeLabel, @countLabel">
+            <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="@(Model.IsLiked ? "currentColor" : "none")"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            <span>@Model.Count</span>
+        </button>
+    </form>
+}
+else if (User.Identity?.IsAuthenticated == true)
+{
+    <span
+        class="like-action is-static@(Model.IsLiked ? " is-liked" : "")"
+        title="You cannot like this yet."
+        aria-label="@countLabel">
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="@(Model.IsLiked ? "currentColor" : "none")"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+        <span>@Model.Count</span>
+    </span>
+}
+else
+{
+    <a
+        asp-area="Identity"
+        asp-page="/Account/Login"
+        asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
+        class="like-action"
+        title="Log in to like"
+        aria-label="Log in to like, @countLabel">
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+        <span>@Model.Count</span>
+    </a>
+}

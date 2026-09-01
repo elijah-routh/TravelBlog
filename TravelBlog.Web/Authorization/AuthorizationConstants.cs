@@ -9,6 +9,7 @@ public static class PolicyNames
 {
     public const string PostOwnerOrAdmin = "PostOwnerOrAdmin";
     public const string VerifiedEmail = "VerifiedEmail";
+    public const string ActiveAuthor = "ActiveAuthor";
     public const string BootstrapAdmin = "BootstrapAdmin";
 }
 

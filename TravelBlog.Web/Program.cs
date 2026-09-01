@@ -41,6 +41,7 @@ builder.Services
 builder.Services.AddSingleton<
     IImageUploadRateLimiter,
     ImageUploadRateLimiter>();
+builder.Services.AddSingleton<INutPlaceholderImages, NutPlaceholderImages>();
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {
@@ -143,6 +144,12 @@ builder.Services.AddAuthorization(options =>
             .RequireAuthenticatedUser()
             .AddRequirements(new VerifiedEmailRequirement()));
     options.AddPolicy(
+        PolicyNames.ActiveAuthor,
+        policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new VerifiedEmailRequirement())
+            .AddRequirements(new BlockedAccountRequirement()));
+    options.AddPolicy(
         PolicyNames.BootstrapAdmin,
         policy => policy
             .RequireAuthenticatedUser()
@@ -155,6 +162,9 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IAuthorizationHandler,
     VerifiedEmailHandler>();
+builder.Services.AddScoped<
+    IAuthorizationHandler,
+    BlockedAccountHandler>();
 builder.Services.AddSingleton<
     IAuthorizationHandler,
     BootstrapAdminHandler>();

@@ -182,6 +182,9 @@ namespace TravelBlog.Web.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsBlocked")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("LastConfirmationEmailSentAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -240,6 +243,7 @@ namespace TravelBlog.Web.Migrations
                             ConcurrencyStamp = "deleted-user-sentinel-concurrency",
                             DisplayName = "Deleted user",
                             EmailConfirmed = false,
+                            IsBlocked = false,
                             LockoutEnabled = false,
                             PhoneNumberConfirmed = false,
                             SecurityStamp = "deleted-user-sentinel-security",
@@ -541,6 +545,34 @@ namespace TravelBlog.Web.Migrations
                     b.ToTable("DiscussionPosts");
                 });
 
+            modelBuilder.Entity("TravelBlog.Web.Models.DiscussionPostLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DiscussionPostId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("DiscussionPostId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("DiscussionPostLikes");
+                });
+
             modelBuilder.Entity("TravelBlog.Web.Models.Post", b =>
                 {
                     b.Property<int>("Id")
@@ -569,6 +601,9 @@ namespace TravelBlog.Web.Migrations
 
                     b.Property<string>("ImagePath")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsPublished")
                         .HasColumnType("boolean");
@@ -638,6 +673,94 @@ namespace TravelBlog.Web.Migrations
                     b.HasIndex("PostId");
 
                     b.ToTable("PostComments");
+                });
+
+            modelBuilder.Entity("TravelBlog.Web.Models.PostCommentLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PostCommentId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PostCommentId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("PostCommentLikes");
+                });
+
+            modelBuilder.Entity("TravelBlog.Web.Models.PostLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("PostLikes");
+                });
+
+            modelBuilder.Entity("TravelBlog.Web.Models.PostView", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ViewerKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "ViewerKey")
+                        .IsUnique();
+
+                    b.ToTable("PostViews");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -843,6 +966,25 @@ namespace TravelBlog.Web.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("TravelBlog.Web.Models.DiscussionPostLike", b =>
+                {
+                    b.HasOne("TravelBlog.Web.Models.DiscussionPost", "DiscussionPost")
+                        .WithMany("Likes")
+                        .HasForeignKey("DiscussionPostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TravelBlog.Web.Models.ApplicationUser", "User")
+                        .WithMany("DiscussionPostLikes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DiscussionPost");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TravelBlog.Web.Models.Post", b =>
                 {
                     b.HasOne("TravelBlog.Web.Models.ApplicationUser", "Author")
@@ -880,6 +1022,62 @@ namespace TravelBlog.Web.Migrations
                     b.Navigation("Post");
                 });
 
+            modelBuilder.Entity("TravelBlog.Web.Models.PostCommentLike", b =>
+                {
+                    b.HasOne("TravelBlog.Web.Models.PostComment", "PostComment")
+                        .WithMany("Likes")
+                        .HasForeignKey("PostCommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TravelBlog.Web.Models.ApplicationUser", "User")
+                        .WithMany("PostCommentLikes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PostComment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TravelBlog.Web.Models.PostLike", b =>
+                {
+                    b.HasOne("TravelBlog.Web.Models.Post", "Post")
+                        .WithMany("Likes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TravelBlog.Web.Models.ApplicationUser", "User")
+                        .WithMany("PostLikes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TravelBlog.Web.Models.PostView", b =>
+                {
+                    b.HasOne("TravelBlog.Web.Models.Post", "Post")
+                        .WithMany("Views")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TravelBlog.Web.Models.ApplicationUser", "User")
+                        .WithMany("PostViews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TravelBlog.Web.Models.ApplicationUser", b =>
                 {
                     b.Navigation("BookClubMemberships");
@@ -890,9 +1088,17 @@ namespace TravelBlog.Web.Migrations
 
                     b.Navigation("DiscussionPollVotes");
 
+                    b.Navigation("DiscussionPostLikes");
+
                     b.Navigation("DiscussionPosts");
 
+                    b.Navigation("PostCommentLikes");
+
                     b.Navigation("PostComments");
+
+                    b.Navigation("PostLikes");
+
+                    b.Navigation("PostViews");
 
                     b.Navigation("Posts");
                 });
@@ -932,6 +1138,8 @@ namespace TravelBlog.Web.Migrations
 
             modelBuilder.Entity("TravelBlog.Web.Models.DiscussionPost", b =>
                 {
+                    b.Navigation("Likes");
+
                     b.Navigation("Poll");
 
                     b.Navigation("Replies");
@@ -940,10 +1148,16 @@ namespace TravelBlog.Web.Migrations
             modelBuilder.Entity("TravelBlog.Web.Models.Post", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("Likes");
+
+                    b.Navigation("Views");
                 });
 
             modelBuilder.Entity("TravelBlog.Web.Models.PostComment", b =>
                 {
+                    b.Navigation("Likes");
+
                     b.Navigation("Replies");
                 });
 #pragma warning restore 612, 618

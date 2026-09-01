@@ -234,6 +234,12 @@ public class DiscussionPostItemViewModel
 
     public bool CanPin { get; set; }
 
+    public bool CanLike { get; set; }
+
+    public bool IsLikedByCurrentUser { get; set; }
+
+    public int LikeCount { get; set; }
+
     public bool IsPinned { get; set; }
 
     public DiscussionPollItemViewModel? Poll { get; set; }
@@ -436,6 +442,12 @@ public class PostCommentItemViewModel
 
     public bool CanReply { get; set; }
 
+    public bool CanLike { get; set; }
+
+    public bool IsLikedByCurrentUser { get; set; }
+
+    public int LikeCount { get; set; }
+
     public IReadOnlyList<PostCommentItemViewModel> Replies { get; set; } = [];
 }
 
@@ -459,9 +471,23 @@ public class PostDetailsViewModel
 
     public bool CanComment { get; set; }
 
+    public bool IsContactMessage { get; set; }
+
     public bool IsAuthenticated { get; set; }
 
     public bool CanManagePost { get; set; }
+
+    public bool CanModeratePost { get; set; }
+
+    public bool CanLike { get; set; }
+
+    public bool IsCurrentUserBlocked { get; set; }
+
+    public bool IsLikedByCurrentUser { get; set; }
+
+    public int LikeCount { get; set; }
+
+    public int ViewCount { get; set; }
 }
 
 public class EditPostCommentViewModel

@@ -12,11 +12,25 @@ public sealed class PostsIndexViewModel
 
     public bool ShowUnpublished { get; init; }
 
+    public bool ShowHidden { get; init; }
+
+    public bool IsAdmin { get; init; }
+
     public bool IsCompactGallery { get; init; }
 
     public bool IsAuthenticated { get; init; }
 
     public bool CanWrite { get; init; }
+
+    public bool CanLike { get; init; }
+
+    public IReadOnlyDictionary<int, int> LikeCounts { get; init; } =
+        new Dictionary<int, int>();
+
+    public IReadOnlyDictionary<int, int> ViewCounts { get; init; } =
+        new Dictionary<int, int>();
+
+    public IReadOnlySet<int> LikedPostIds { get; init; } = new HashSet<int>();
 }
 
 public static class PostListScope
@@ -34,11 +48,15 @@ public static class PostSortOrder
 {
     public const string Newest = "newest";
     public const string Oldest = "oldest";
+    public const string MostLiked = "liked";
 
     public static string Normalize(string? sort) =>
-        string.Equals(sort, Oldest, StringComparison.OrdinalIgnoreCase)
-            ? Oldest
-            : Newest;
+        sort?.ToLowerInvariant() switch
+        {
+            Oldest => Oldest,
+            MostLiked => MostLiked,
+            _ => Newest
+        };
 }
 
 public static class PostPublishFilter
@@ -62,5 +80,5 @@ public static class PostGallerySize
     public const string Compact = "compact";
 
     public static bool IsCompact(string? gallery) =>
-        string.Equals(gallery, Compact, StringComparison.OrdinalIgnoreCase);
+        !string.Equals(gallery, Default, StringComparison.OrdinalIgnoreCase);
 }

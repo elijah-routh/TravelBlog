@@ -214,6 +214,51 @@ public class DiscussionPostsController : Controller
         return RedirectToThread(post, slug, sort);
     }
 
+    [HttpPost("{id:int}/Like")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleLike(
+        string slug,
+        int id,
+        string? sort)
+    {
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Challenge();
+        }
+
+        var post = await FindPostAsync(slug, id);
+        if (post is null)
+        {
+            return NotFound();
+        }
+
+        if (!await CanPostAsync(post.ClubId, userId))
+        {
+            return Forbid();
+        }
+
+        var existing = await _context.DiscussionPostLikes
+            .FirstOrDefaultAsync(like =>
+                like.DiscussionPostId == post.Id && like.UserId == userId);
+        if (existing is null)
+        {
+            _context.DiscussionPostLikes.Add(new DiscussionPostLike
+            {
+                DiscussionPostId = post.Id,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            _context.DiscussionPostLikes.Remove(existing);
+        }
+
+        await _context.SaveChangesAsync();
+        return RedirectToThread(post, slug, sort);
+    }
+
     private async Task<DiscussionPost?> FindPostAsync(
         string slug,
         int id,

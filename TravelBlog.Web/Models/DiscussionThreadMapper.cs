@@ -38,7 +38,8 @@ public static class DiscussionThreadMapper
                 replies,
                 userId,
                 isAdmin,
-                canReply: canPost))
+                canReply: canPost,
+                canLike: canPost))
             .ToList();
     }
 
@@ -48,7 +49,8 @@ public static class DiscussionThreadMapper
         IReadOnlyDictionary<int, List<DiscussionPost>> replies,
         string? userId,
         bool isAdmin,
-        bool canReply)
+        bool canReply,
+        bool canLike)
     {
         var childReplies = replies.TryGetValue(post.Id, out var children)
             ? children
@@ -68,6 +70,11 @@ public static class DiscussionThreadMapper
                 OwnerAccess.IsAdminOrOwner(isAdmin, userId, post.AuthorId),
             CanDelete = OwnerAccess.IsAdminOrOwner(isAdmin, userId, post.AuthorId),
             CanReply = canReply && post.Poll is null,
+            CanLike = canLike,
+            LikeCount = post.Likes.Count,
+            IsLikedByCurrentUser =
+                !string.IsNullOrWhiteSpace(userId) &&
+                post.Likes.Any(like => like.UserId == userId),
             Poll = post.Poll is null
                 ? null
                 : new DiscussionPollItemViewModel
@@ -102,7 +109,8 @@ public static class DiscussionThreadMapper
                     replies,
                     userId,
                     isAdmin,
-                    canReply: false))
+                    canReply: false,
+                    canLike))
                 .ToList()
         };
     }

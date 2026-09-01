@@ -2,6 +2,11 @@
 
 @{
     ViewData["Title"] = "Edit Post";
+    var categoryOptions = PostCategories.EditorialCategories()
+        .Select(category => new SelectListItem(
+            PostCategories.GetDisplayName(category),
+            ((int)category).ToString()))
+        .ToList();
 }
 
 <section class="content-section">
@@ -69,7 +74,7 @@
 
                         <select
                             asp-for="Category"
-                            asp-items="Html.GetEnumSelectList<PostCategory>()"
+                            asp-items="categoryOptions"
                             class="form-select">
                         </select>
 

@@ -1,0 +1,33 @@
+@{
+    var currentAction =
+        ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var usersClass = string.Equals(
+        currentAction,
+        "Index",
+        StringComparison.OrdinalIgnoreCase)
+        ? "admin-nav__link is-active"
+        : "admin-nav__link";
+    var contactClass = string.Equals(
+        currentAction,
+        "Contact",
+        StringComparison.OrdinalIgnoreCase)
+        ? "admin-nav__link is-active"
+        : "admin-nav__link";
+}
+
+<nav class="admin-nav" aria-label="Admin">
+    <a
+        asp-controller="Users"
+        asp-action="Index"
+        class="@usersClass"
+        aria-current="@(usersClass.Contains("is-active") ? "page" : null)">
+        Users
+    </a>
+    <a
+        asp-controller="Users"
+        asp-action="Contact"
+        class="@contactClass"
+        aria-current="@(contactClass.Contains("is-active") ? "page" : null)">
+        Contact
+    </a>
+</nav>

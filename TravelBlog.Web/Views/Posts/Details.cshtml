@@ -5,6 +5,13 @@
 
 @{
     ViewData["Title"] = Model.Post.Title;
+    var postImagePath = SiteBranding.PostCardImage(
+        Model.Post.ImagePath,
+        Model.Post.Id,
+        Url,
+        NutPlaceholders);
+    var isPlaceholderImage =
+        SiteBranding.IsPlaceholderImage(Model.Post.ImagePath);
 }
 
 <article class="content-section">
@@ -13,19 +20,31 @@
             <div class="col-sm-12 col-lg-9">
 
                 <div class="d-flex flex-wrap gap-2 mb-3">
-                    <span class="badge text-bg-primary">
+                    <span class="badge bg-primary">
                         @Html.DisplayFor(model => model.Post.Category)
                     </span>
 
-                    @if (Model.Post.IsPublished)
+                    @if (Model.IsContactMessage)
                     {
-                        <span class="badge text-bg-success">
+                        <span class="badge bg-info text-dark">
+                            Contact message
+                        </span>
+                    }
+                    else if (Model.Post.IsHidden)
+                    {
+                        <span class="badge bg-warning text-dark">
+                            Hidden
+                        </span>
+                    }
+                    else if (Model.Post.IsPublished)
+                    {
+                        <span class="badge bg-success">
                             Published
                         </span>
                     }
                     else
                     {
-                        <span class="badge text-bg-secondary">
+                        <span class="badge bg-secondary">
                             Draft
                         </span>
                     }
@@ -35,18 +54,37 @@
                     @Model.Post.Title
                 </h1>
 
-                <p class="text-muted">
+                <p class="text-muted mb-2">
                     By @Model.Post.Author.DisplayName ·
                     @Model.Post.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy h:mm tt")
                 </p>
 
-                @if (!string.IsNullOrWhiteSpace(Model.Post.ImagePath))
-                {
-                    <img
-                        src="@Url.Content(Model.Post.ImagePath)"
-                        class="img-fluid rounded w-100 mb-4 post-detail-image"
-                        alt="@Model.Post.Title" />
-                }
+                <div class="post-engagement mb-4">
+                    @if (!Model.IsContactMessage)
+                    {
+                        var postLikeButton = new LikeButtonViewModel
+                        {
+                            Count = Model.LikeCount,
+                            IsLiked = Model.IsLikedByCurrentUser,
+                            CanLike = Model.CanLike,
+                            Controller = "Posts",
+                            Action = "ToggleLike",
+                            RouteValues = new Dictionary<string, string>
+                            {
+                                ["slug"] = Model.Post.Slug
+                            }
+                        };
+                        <partial name="_LikeButton" model="postLikeButton" />
+                    }
+                    <span class="post-view-count">
+                        @Model.ViewCount @(Model.ViewCount == 1 ? "view" : "views")
+                    </span>
+                </div>
+
+                <img
+                    src="@postImagePath"
+                    class="img-fluid rounded w-100 mb-4 post-detail-image@(isPlaceholderImage ? " post-card-image--placeholder" : null)"
+                    alt="@Model.Post.Title" />
 
                 @if (!string.IsNullOrWhiteSpace(Model.Post.Summary))
                 {
@@ -62,22 +100,72 @@
                 <hr class="my-5" />
 
                 <div class="d-flex flex-wrap gap-2 mb-5">
-                    <a
-                        asp-controller="Posts"
-                        asp-action="Index"
-                        class="btn btn-outline-secondary">
-                        Back to Posts
-                    </a>
-
-                    @if (Model.CanManagePost)
+                    @if (Model.IsContactMessage)
+                    {
+                        <a
+                            asp-controller="Users"
+                            asp-action="Contact"
+                            class="btn btn-outline-secondary">
+                            Back to Contact
+                        </a>
+                    }
+                    else
                     {
                         <a
                             asp-controller="Posts"
-                            asp-action="Edit"
-                            asp-route-id="@Model.Post.Id"
-                            class="icon-action"
-                            title="Edit post"
-                            aria-label="Edit post">&#9998;</a>
+                            asp-action="Index"
+                            class="btn btn-outline-secondary">
+                            Back to Posts
+                        </a>
+                    }
+
+                    @if (Model.CanModeratePost)
+                    {
+                        if (Model.Post.IsHidden)
+                        {
+                            <form
+                                asp-controller="Posts"
+                                asp-action="Unhide"
+                                asp-route-id="@Model.Post.Id"
+                                method="post"
+                                class="d-inline">
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-outline-warning">
+                                    Unhide
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form
+                                asp-controller="Posts"
+                                asp-action="Hide"
+                                asp-route-id="@Model.Post.Id"
+                                method="post"
+                                class="d-inline">
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-outline-warning">
+                                    Hide
+                                </button>
+                            </form>
+                        }
+                    }
+
+                    @if (Model.CanManagePost)
+                    {
+                        if (!Model.IsContactMessage)
+                        {
+                            <a
+                                asp-controller="Posts"
+                                asp-action="Edit"
+                                asp-route-id="@Model.Post.Id"
+                                class="icon-action"
+                                title="Edit post"
+                                aria-label="Edit post">&#9998;</a>
+                        }
+
                         <a
                             asp-controller="Posts"
                             asp-action="Delete"
@@ -88,6 +176,8 @@
                     }
                 </div>
 
+                @if (!Model.IsContactMessage)
+                {
                 <section class="club-panel">
                     <h2 class="h4 mb-3">Comments</h2>
 
@@ -140,6 +230,14 @@
                     }
                     else if (Model.IsAuthenticated)
                     {
+                        @if (Model.IsCurrentUserBlocked)
+                        {
+                            <div class="alert alert-danger mb-0" role="status">
+                                Your account is blocked and cannot comment on posts.
+                            </div>
+                        }
+                        else
+                        {
                         <div class="alert alert-warning mb-0" role="status">
                             Verify your email before commenting on this post.
                             <a
@@ -149,6 +247,7 @@
                                 Review email verification
                             </a>.
                         </div>
+                        }
                     }
                     else
                     {
@@ -163,6 +262,7 @@
                         </p>
                     }
                 </section>
+                }
             </div>
         </div>
     </div>

@@ -30,4 +30,6 @@ public class PostComment
     public string AuthorId { get; set; } = string.Empty;
 
     public ApplicationUser Author { get; set; } = null!;
+
+    public ICollection<PostCommentLike> Likes { get; set; } = [];
 }

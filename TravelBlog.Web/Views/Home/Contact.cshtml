@@ -1,0 +1,107 @@
+@model CreateContactPostViewModel
+
+@{
+    ViewData["Title"] = "Contact";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-6">
+                <h1 class="mb-2">Contact</h1>
+
+                <p class="section-subtitle text-start mb-4">
+                    Questions, feedback, or something not covered in the
+                    <a asp-action="Faq">FAQ</a>? Send us a message.
+                </p>
+
+                @if (Model.Submitted)
+                {
+                    <div class="alert alert-success" role="status">
+                        Thanks for reaching out. We received your message.
+                    </div>
+
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        Back to home
+                    </a>
+                }
+                else if (Model.IsBlocked)
+                {
+                    <div class="alert alert-danger" role="status">
+                        Your account is blocked and cannot send contact messages.
+                    </div>
+                }
+                else if (!Model.CanSubmit && !Model.HasReachedDailyLimit)
+                {
+                    <div class="alert alert-warning" role="status">
+                        Verify your email before sending a contact message.
+                        <a
+                            asp-area="Identity"
+                            asp-page="/Account/Manage/Email"
+                            class="alert-link">
+                            Review email verification
+                        </a>.
+                    </div>
+                }
+                else if (Model.HasReachedDailyLimit)
+                {
+                    <div class="alert alert-info" role="status">
+                        You have already sent a contact message today.
+                        You can send another one tomorrow.
+                    </div>
+                }
+                else
+                {
+                    <form
+                        asp-action="Contact"
+                        method="post"
+                        novalidate>
+
+                        <div
+                            asp-validation-summary="ModelOnly"
+                            class="alert alert-danger">
+                        </div>
+
+                        <div class="mb-3">
+                            <label
+                                asp-for="Title"
+                                class="form-label">
+                            </label>
+                            <input
+                                asp-for="Title"
+                                class="form-control" />
+                            <span
+                                asp-validation-for="Title"
+                                class="text-danger">
+                            </span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label
+                                asp-for="Content"
+                                class="form-label">
+                            </label>
+                            <textarea
+                                asp-for="Content"
+                                class="form-control"
+                                rows="8">
+                            </textarea>
+                            <span
+                                asp-validation-for="Content"
+                                class="text-danger">
+                            </span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Send message
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

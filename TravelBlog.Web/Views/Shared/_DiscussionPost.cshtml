@@ -24,80 +24,99 @@ else
     }
 </p>
 
-@if (Model.CanEdit || Model.CanDelete || Model.CanReply || Model.CanPin)
-{
-    <div class="comment-actions mb-2">
-        @if (Model.CanEdit)
+<div class="comment-actions mb-2">
+    @{
+        var likeRoutes = new Dictionary<string, string>
         {
-            <a
-                asp-controller="DiscussionPosts"
-                asp-action="Edit"
-                asp-route-slug="@Model.ClubSlug"
-                asp-route-id="@Model.Id"
-                class="icon-action"
-                title="Edit message"
-                aria-label="Edit message">
-                &#9998;
-            </a>
+            ["slug"] = Model.ClubSlug,
+            ["id"] = Model.Id.ToString()
+        };
+        var sort = Context.Request.Query["sort"].ToString();
+        if (!string.IsNullOrWhiteSpace(sort))
+        {
+            likeRoutes["sort"] = sort;
         }
-        @if (Model.CanDelete)
+        var discussionLikeButton = new LikeButtonViewModel
         {
-            <a
-                asp-controller="DiscussionPosts"
-                asp-action="Delete"
-                asp-route-slug="@Model.ClubSlug"
-                asp-route-id="@Model.Id"
-                class="icon-action icon-action-danger"
-                title="Delete message"
-                aria-label="Delete message">
-                &#128465;
-            </a>
-        }
-        @if (Model.CanPin)
-        {
-            <form
-                asp-controller="DiscussionPosts"
-                asp-action="TogglePin"
-                asp-route-slug="@Model.ClubSlug"
-                asp-route-id="@Model.Id"
-                asp-route-sort="@(Context.Request.Query["sort"].ToString())"
-                method="post">
-                <button
-                    type="submit"
-                    class="icon-action @(Model.IsPinned ? "discussion-pin-active" : null)"
-                    title="@(Model.IsPinned ? "Unpin message" : "Pin message")"
-                    aria-label="@(Model.IsPinned ? "Unpin message" : "Pin message")">
-                    <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M12 17v5" />
-                        <path d="M5 17h14" />
-                        <path d="M6 3h12l-2 7 3 3H5l3-3-2-7z" />
-                    </svg>
-                </button>
-            </form>
-        }
-        @if (Model.CanReply)
-        {
+            Count = Model.LikeCount,
+            IsLiked = Model.IsLikedByCurrentUser,
+            CanLike = Model.CanLike,
+            Controller = "DiscussionPosts",
+            Action = "ToggleLike",
+            RouteValues = likeRoutes
+        };
+    }
+    <partial name="_LikeButton" model="discussionLikeButton" />
+    @if (Model.CanEdit)
+    {
+        <a
+            asp-controller="DiscussionPosts"
+            asp-action="Edit"
+            asp-route-slug="@Model.ClubSlug"
+            asp-route-id="@Model.Id"
+            class="icon-action"
+            title="Edit message"
+            aria-label="Edit message">
+            &#9998;
+        </a>
+    }
+    @if (Model.CanDelete)
+    {
+        <a
+            asp-controller="DiscussionPosts"
+            asp-action="Delete"
+            asp-route-slug="@Model.ClubSlug"
+            asp-route-id="@Model.Id"
+            class="icon-action icon-action-danger"
+            title="Delete message"
+            aria-label="Delete message">
+            &#128465;
+        </a>
+    }
+    @if (Model.CanPin)
+    {
+        <form
+            asp-controller="DiscussionPosts"
+            asp-action="TogglePin"
+            asp-route-slug="@Model.ClubSlug"
+            asp-route-id="@Model.Id"
+            asp-route-sort="@(Context.Request.Query["sort"].ToString())"
+            method="post">
             <button
-                type="button"
-                class="reply-toggle"
-                data-bs-toggle="collapse"
-                data-bs-target="#discussion-reply-@Model.Id"
-                aria-expanded="false"
-                aria-controls="discussion-reply-@Model.Id">
-                Reply
+                type="submit"
+                class="icon-action @(Model.IsPinned ? "discussion-pin-active" : null)"
+                title="@(Model.IsPinned ? "Unpin message" : "Pin message")"
+                aria-label="@(Model.IsPinned ? "Unpin message" : "Pin message")">
+                <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="M12 17v5" />
+                    <path d="M5 17h14" />
+                    <path d="M6 3h12l-2 7 3 3H5l3-3-2-7z" />
+                </svg>
             </button>
-        }
-    </div>
-}
+        </form>
+    }
+    @if (Model.CanReply)
+    {
+        <button
+            type="button"
+            class="reply-toggle"
+            data-bs-toggle="collapse"
+            data-bs-target="#discussion-reply-@Model.Id"
+            aria-expanded="false"
+            aria-controls="discussion-reply-@Model.Id">
+            Reply
+        </button>
+    }
+</div>
 
 @if (Model.CanReply)
 {

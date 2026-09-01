@@ -13,6 +13,8 @@ public class ApplicationUser : IdentityUser
 
     public DateTime? LastPasswordResetEmailSentAt { get; set; }
 
+    public bool IsBlocked { get; set; }
+
     public ICollection<Post> Posts { get; set; } = [];
 
     public ICollection<BookClub> CreatedBookClubs { get; set; } = [];
@@ -26,4 +28,12 @@ public class ApplicationUser : IdentityUser
     public ICollection<DiscussionPollVote> DiscussionPollVotes { get; set; } = [];
 
     public ICollection<PostComment> PostComments { get; set; } = [];
+
+    public ICollection<PostLike> PostLikes { get; set; } = [];
+
+    public ICollection<PostCommentLike> PostCommentLikes { get; set; } = [];
+
+    public ICollection<DiscussionPostLike> DiscussionPostLikes { get; set; } = [];
+
+    public ICollection<PostView> PostViews { get; set; } = [];
 }

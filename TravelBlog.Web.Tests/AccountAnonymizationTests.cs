@@ -168,6 +168,27 @@ public sealed class AccountAnonymizationTests
                 OptionId = poll.Options.First().Id,
                 UserId = target.Id
             });
+            context.PostLikes.Add(new PostLike
+            {
+                PostId = post.Id,
+                UserId = target.Id
+            });
+            context.PostCommentLikes.Add(new PostCommentLike
+            {
+                PostCommentId = comment.Id,
+                UserId = target.Id
+            });
+            context.DiscussionPostLikes.Add(new DiscussionPostLike
+            {
+                DiscussionPostId = discussion.Id,
+                UserId = target.Id
+            });
+            context.PostViews.Add(new PostView
+            {
+                PostId = post.Id,
+                UserId = target.Id,
+                ViewerKey = Guid.NewGuid().ToString("N")
+            });
             await context.SaveChangesAsync();
 
             postId = post.Id;
@@ -225,6 +246,16 @@ public sealed class AccountAnonymizationTests
                 membership => membership.UserId == target.Id));
             Assert.False(await context.DiscussionPollVotes.AnyAsync(
                 vote => vote.UserId == target.Id));
+            Assert.False(await context.PostLikes.AnyAsync(
+                like => like.UserId == target.Id));
+            Assert.False(await context.PostCommentLikes.AnyAsync(
+                like => like.UserId == target.Id));
+            Assert.False(await context.DiscussionPostLikes.AnyAsync(
+                like => like.UserId == target.Id));
+            Assert.False(await context.PostViews.AnyAsync(
+                view => view.UserId == target.Id));
+            Assert.True(await context.PostViews.AnyAsync(
+                view => view.PostId == postId));
 
             var replacement = new ApplicationUser
             {

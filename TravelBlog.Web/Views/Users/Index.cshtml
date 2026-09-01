@@ -3,6 +3,7 @@
     ViewData["Title"] = "Users";
 }
 <section class="content-section"><div class="container">
+    <partial name="_AdminNav" />
     <h1>Users</h1>
     <p class="text-muted">Manage administrator access.</p>
     @if (TempData["StatusMessage"] is string status) { <div class="alert alert-success">@status</div> }
@@ -70,8 +71,27 @@
                     {
                         <span class="badge bg-warning text-dark">Unverified</span>
                     }
+                    @if (account.IsBlocked)
+                    {
+                        <span class="badge bg-danger">Blocked</span>
+                    }
                 </td>
                 <td class="text-end">
+                    @if (account.CanBlock)
+                    {
+                        if (account.IsBlocked)
+                        {
+                            <form asp-action="Unblock" asp-route-id="@account.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Unblock</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form asp-action="Block" asp-route-id="@account.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Block</button>
+                            </form>
+                        }
+                    }
                     @if (account.IsAdmin && !account.IsBootstrapAdmin)
                     {
                         <form asp-action="Demote" asp-route-id="@account.Id" method="post" class="d-inline">

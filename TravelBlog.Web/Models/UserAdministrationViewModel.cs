@@ -11,6 +11,8 @@ public sealed class UserAdministrationViewModel
     public bool CanRemove { get; init; }
     public bool IsLockedOut { get; init; }
     public bool CanUnlock { get; init; }
+    public bool IsBlocked { get; init; }
+    public bool CanBlock { get; init; }
 }
 
 public sealed class RemoveUserViewModel

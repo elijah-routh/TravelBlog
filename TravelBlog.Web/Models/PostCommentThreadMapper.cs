@@ -24,7 +24,8 @@ public static class PostCommentThreadMapper
                 replies,
                 userId,
                 isAdmin,
-                canReply))
+                canReply,
+                canLike: canReply))
             .ToList();
     }
 
@@ -33,7 +34,8 @@ public static class PostCommentThreadMapper
         IReadOnlyDictionary<int, List<PostComment>> replies,
         string? userId,
         bool isAdmin,
-        bool canReply)
+        bool canReply,
+        bool canLike)
     {
         var childReplies = replies.TryGetValue(comment.Id, out var children)
             ? children
@@ -55,13 +57,19 @@ public static class PostCommentThreadMapper
                 userId,
                 comment.AuthorId),
             CanReply = canReply,
+            CanLike = canLike,
+            LikeCount = comment.Likes.Count,
+            IsLikedByCurrentUser =
+                !string.IsNullOrWhiteSpace(userId) &&
+                comment.Likes.Any(like => like.UserId == userId),
             Replies = childReplies
                 .Select(reply => Map(
                     reply,
                     replies,
                     userId,
                     isAdmin,
-                    canReply: false))
+                    canReply: false,
+                    canLike))
                 .ToList()
         };
     }

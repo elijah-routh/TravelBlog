@@ -42,4 +42,6 @@ public class DiscussionPost
     public string AuthorId { get; set; } = string.Empty;
 
     public ApplicationUser Author { get; set; } = null!;
+
+    public ICollection<DiscussionPostLike> Likes { get; set; } = [];
 }
