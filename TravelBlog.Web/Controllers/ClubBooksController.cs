@@ -538,11 +538,6 @@ public class ClubBooksController : Controller
             return null;
         }
 
-        var clubBooks = await _context.ClubBooks
-            .AsNoTracking()
-            .Where(existing => existing.ClubId == book.ClubId)
-            .ToListAsync();
-
         var userId = _userManager.GetUserId(User);
         var currentUser = await _userManager.GetUserAsync(User);
         var isVerified = currentUser?.EmailConfirmed == true;
@@ -553,7 +548,6 @@ public class ClubBooksController : Controller
                 membership.UserId == userId) ?? false);
         var now = DateTime.UtcNow;
         var normalizedSort = DiscussionSortOrder.Normalize(discussionSort);
-        var currentBook = ClubBookTimeline.CurrentBook(clubBooks, now);
         var threadItems = new List<BookDiscussionThreadViewModel>
         {
             new()
@@ -604,7 +598,7 @@ public class ClubBooksController : Controller
             ImagePath = book.ImagePath,
             StartDate = book.StartDate,
             EndDate = book.EndDate,
-            Status = ClubBookTimeline.Status(book, currentBook, now),
+            Status = ClubBookTimeline.Status(book, now),
             CanPost = isVerified && (isAdmin || isMember),
             IsAdmin = isAdmin,
             IsAuthenticated = User.Identity?.IsAuthenticated == true,

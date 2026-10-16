@@ -17,27 +17,27 @@ public static class ClubBookTimeline
 
         var today = utcNow.Date;
         return books
-            .Where(book => book.EndDate.Date >= today)
+            .Where(book =>
+                book.StartDate.Date <= today &&
+                book.EndDate.Date >= today)
             .OrderBy(book => book.EndDate)
             .ThenBy(book => book.Id)
             .FirstOrDefault();
     }
 
-    public static string Status(
-        ClubBook book,
-        ClubBook? current,
-        DateTime utcNow)
+    public static string Status(ClubBook book, DateTime utcNow)
     {
-        if (current?.Id == book.Id)
+        var today = utcNow.Date;
+        if (book.EndDate.Date < today)
         {
-            return Current;
+            return Past;
         }
 
-        if (book.EndDate.Date >= utcNow.Date)
+        if (book.StartDate.Date > today)
         {
             return Upcoming;
         }
 
-        return Past;
+        return Current;
     }
 }

@@ -8,17 +8,16 @@
     <div class="container">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
             <div>
-                <p class="text-uppercase small text-muted mb-1">All clubs</p>
-                <h1 class="mb-2">Combined Reading Timeline</h1>
+                <h1 class="mb-2">Reading timeline</h1>
                 <p class="text-muted mb-0">
-                    Every book from every club, ordered by reading date.
+                    Every book, ordered by reading date.
                 </p>
             </div>
             <a
                 asp-controller="BookClubs"
                 asp-action="Index"
                 class="btn btn-outline-secondary">
-                Back to Book Clubs
+                Book Club
             </a>
         </div>
 
@@ -53,13 +52,6 @@
                                             –
                                             @book.EndDate.ToString("MMM d, yyyy")
                                         </time>
-                                        <a
-                                            asp-controller="BookClubs"
-                                            asp-action="Details"
-                                            asp-route-slug="@book.ClubSlug"
-                                            class="small text-muted text-decoration-none timeline-club-link">
-                                            @book.ClubName
-                                        </a>
                                     </div>
                                     <h2 class="h5 mb-1">
                                         <a

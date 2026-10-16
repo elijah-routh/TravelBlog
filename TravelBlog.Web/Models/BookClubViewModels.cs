@@ -205,11 +205,60 @@ public class ClubNoticeItemViewModel
 {
     public int Id { get; set; }
 
+    public string ClubName { get; set; } = string.Empty;
+
+    public string ClubSlug { get; set; } = string.Empty;
+
     public string AuthorDisplayName { get; set; } = string.Empty;
 
     public string Body { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }
+}
+
+public class BookClubNoticeTargetViewModel
+{
+    public string Name { get; set; } = string.Empty;
+
+    public string Slug { get; set; } = string.Empty;
+}
+
+public class BookClubHomeViewModel
+{
+    public bool IsAdmin { get; set; }
+
+    public bool ShowClubNames { get; set; }
+
+    public string? PrimaryClubSlug { get; set; }
+
+    public CombinedBookTimelineItemViewModel? FeaturedBook { get; set; }
+
+    public IReadOnlyList<CombinedBookTimelineItemViewModel> UpcomingBooks
+        { get; set; } = [];
+
+    public IReadOnlyList<CombinedBookTimelineItemViewModel> PastBooks
+        { get; set; } = [];
+
+    public IReadOnlyList<ClubNoticeItemViewModel> Notices { get; set; } = [];
+
+    public IReadOnlyList<BookClubNoticeTargetViewModel> NoticeClubs
+        { get; set; } = [];
+
+    public AddClubNoticeViewModel NewNotice { get; set; } = new();
+}
+
+public class BookShelfSectionViewModel
+{
+    public string Heading { get; set; } = string.Empty;
+
+    public string EmptyMessage { get; set; } = string.Empty;
+
+    public bool ShowClubName { get; set; }
+
+    public bool IsAdmin { get; set; }
+
+    public IReadOnlyList<CombinedBookTimelineItemViewModel> Books { get; set; } =
+        [];
 }
 
 public class DiscussionPostItemViewModel

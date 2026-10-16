@@ -1,0 +1,103 @@
+@model BookShelfSectionViewModel
+
+@{
+    var headingId = $"{Model.Heading.ToLowerInvariant().Replace(' ', '-')}-heading";
+    string BadgeClass(string status) => status switch
+    {
+        ClubBookTimeline.Current => "timeline-status-current",
+        ClubBookTimeline.Upcoming => "timeline-status-upcoming",
+        _ => "timeline-status-past"
+    };
+}
+
+<section class="book-shelf-section" aria-labelledby="@headingId">
+    <h2 id="@headingId" class="h4 mb-3">@Model.Heading</h2>
+
+    @if (Model.Books.Count == 0)
+    {
+        <p class="text-muted mb-0">@Model.EmptyMessage</p>
+    }
+    else
+    {
+        <div class="book-shelf">
+            @foreach (var book in Model.Books)
+            {
+                <article class="book-shelf-card">
+                    <a
+                        asp-controller="ClubBooks"
+                        asp-action="Details"
+                        asp-route-clubSlug="@book.ClubSlug"
+                        asp-route-bookId="@book.Id"
+                        class="book-shelf-cover-link"
+                        tabindex="-1"
+                        aria-hidden="true">
+                        @if (!string.IsNullOrWhiteSpace(book.ImagePath))
+                        {
+                            <img
+                                src="@book.ImagePath"
+                                class="book-shelf-cover"
+                                alt="" />
+                        }
+                        else
+                        {
+                            <div class="book-shelf-cover book-cover-placeholder">
+                                No cover
+                            </div>
+                        }
+                    </a>
+                    <div class="book-shelf-copy">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <span class="badge timeline-status-badge @BadgeClass(book.Status)">
+                                @book.Status
+                            </span>
+                            <time class="small text-muted">
+                                @book.StartDate.ToString("MMM d, yyyy")
+                                –
+                                @book.EndDate.ToString("MMM d, yyyy")
+                            </time>
+                        </div>
+                        <h3 class="h6 mb-1">
+                            <a
+                                asp-controller="ClubBooks"
+                                asp-action="Details"
+                                asp-route-clubSlug="@book.ClubSlug"
+                                asp-route-bookId="@book.Id">
+                                @book.Title
+                            </a>
+                        </h3>
+                        <p class="mb-1">@book.AuthorName</p>
+                        @if (Model.ShowClubName)
+                        {
+                            <p class="small text-muted mb-1">@book.ClubName</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(book.Notes))
+                        {
+                            <p class="book-shelf-notes small text-muted mb-2">@book.Notes</p>
+                        }
+                        @if (Model.IsAdmin)
+                        {
+                            <div class="d-flex flex-wrap gap-1">
+                                <a
+                                    asp-controller="ClubBooks"
+                                    asp-action="Edit"
+                                    asp-route-clubSlug="@book.ClubSlug"
+                                    asp-route-bookId="@book.Id"
+                                    class="icon-action"
+                                    title="Edit book"
+                                    aria-label="Edit @book.Title">&#9998;</a>
+                                <a
+                                    asp-controller="ClubBooks"
+                                    asp-action="Delete"
+                                    asp-route-clubSlug="@book.ClubSlug"
+                                    asp-route-bookId="@book.Id"
+                                    class="icon-action icon-action-danger"
+                                    title="Delete book"
+                                    aria-label="Delete @book.Title">&#128465;</a>
+                            </div>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>

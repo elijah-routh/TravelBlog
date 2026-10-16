@@ -1,0 +1,33 @@
+@{
+    var currentAction =
+        ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+
+    string LinkClass(string action) =>
+        string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase)
+            ? "club-section-nav__link is-active"
+            : "club-section-nav__link";
+}
+
+<nav class="club-section-nav" aria-label="Book club">
+    <a
+        asp-controller="BookClubs"
+        asp-action="Index"
+        class="@LinkClass("Index")"
+        aria-current="@(string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+        Books
+    </a>
+    <a
+        asp-controller="BookClubs"
+        asp-action="Clubs"
+        class="@LinkClass("Clubs")"
+        aria-current="@(string.Equals(currentAction, "Clubs", StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+        Clubs
+    </a>
+    <a
+        asp-controller="BookClubs"
+        asp-action="Timeline"
+        class="@LinkClass("Timeline")"
+        aria-current="@(string.Equals(currentAction, "Timeline", StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+        Combined Timeline
+    </a>
+</nav>

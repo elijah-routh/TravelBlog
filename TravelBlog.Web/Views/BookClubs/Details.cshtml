@@ -10,7 +10,14 @@
     <div class="container">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
             <div>
-                <p class="text-uppercase small text-muted mb-1">Book Club</p>
+                <p class="text-uppercase small text-muted mb-1">
+                    <a
+                        asp-controller="BookClubs"
+                        asp-action="Index"
+                        class="text-muted text-decoration-none">
+                        Book Club
+                    </a>
+                </p>
                 <h1 class="mb-2">@Model.Name</h1>
                 <details class="club-member-disclosure text-muted">
                     <summary class="club-member-summary">

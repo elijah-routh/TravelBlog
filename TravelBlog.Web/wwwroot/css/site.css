@@ -1137,6 +1137,56 @@ button.posts-mini-link {
     height: auto;
 }
 
+.book-shelf-section + .book-shelf-section {
+    margin-top: 2.5rem;
+}
+
+.book-shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 1rem;
+}
+
+.book-shelf-card {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 0.9rem;
+    align-items: start;
+    padding: 0.9rem;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.book-shelf-cover-link {
+    display: block;
+}
+
+.book-shelf-cover {
+    width: 84px;
+    height: auto;
+    aspect-ratio: 13 / 19;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.book-shelf-cover.book-cover-placeholder {
+    min-height: 0;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.book-shelf-copy {
+    min-width: 0;
+}
+
+.book-shelf-notes {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
 .book-timeline-content {
     display: grid;
     grid-template-columns: 72px 1fr;
@@ -1276,26 +1326,31 @@ body:has(.content-section--account) .site-footer {
     color: #646464;
 }
 
-.admin-nav {
+.admin-nav,
+.club-section-nav {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
     margin-bottom: 1.5rem;
 }
 
-.admin-nav__link {
+.admin-nav__link,
+.club-section-nav__link {
     color: #4a4a4a;
     font-weight: 600;
     text-decoration: none;
 }
 
 .admin-nav__link:hover,
-.admin-nav__link:focus-visible {
+.admin-nav__link:focus-visible,
+.club-section-nav__link:hover,
+.club-section-nav__link:focus-visible {
     color: #171717;
     text-decoration: underline;
 }
 
-.admin-nav__link.is-active {
+.admin-nav__link.is-active,
+.club-section-nav__link.is-active {
     color: #171717;
     text-decoration: underline;
 }

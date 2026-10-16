@@ -41,31 +41,88 @@ public sealed class BookClubTests
         var timeline = await client.GetAsync("/BookClubs/Timeline");
 
         Assert.Equal(HttpStatusCode.OK, index.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, details.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, clubTimeline.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, details.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, clubTimeline.StatusCode);
         Assert.Equal(HttpStatusCode.OK, bookPage.StatusCode);
         Assert.Equal(HttpStatusCode.OK, timeline.StatusCode);
+        Assert.Equal("/BookClubs/Index", LocationPath(details));
 
         var indexHtml = await index.Content.ReadAsStringAsync();
-        var detailsHtml = await details.Content.ReadAsStringAsync();
-        var clubTimelineHtml = await clubTimeline.Content.ReadAsStringAsync();
         var bookHtml = await bookPage.Content.ReadAsStringAsync();
         var timelineHtml = await timeline.Content.ReadAsStringAsync();
-        Assert.Contains(club.Name, indexHtml);
-        Assert.Contains("Book Clubs", indexHtml);
-        Assert.Contains(club.Name, detailsHtml);
-        Assert.Contains(book.Title, detailsHtml);
-        Assert.Contains("View Full Timeline", detailsHtml);
-        Assert.Contains("Reading timeline", clubTimelineHtml);
-        Assert.Contains("Show Current Book", clubTimelineHtml);
+        Assert.Contains("Book Club", indexHtml);
+        Assert.Contains("Timeline", indexHtml);
+        Assert.Contains("Featured book", indexHtml);
+        Assert.Contains(book.Title, indexHtml);
+        Assert.DoesNotContain("View Club", indexHtml);
+        Assert.DoesNotContain("Club discussion", indexHtml);
         Assert.Contains(book.Title, bookHtml);
+        Assert.Contains("Book discussion", bookHtml);
         Assert.Contains(book.ImagePath!, indexHtml);
         Assert.Contains(
             book.EndDate.ToString("MMM d, yyyy"),
             indexHtml);
-        Assert.Contains("Combined Reading Timeline", timelineHtml);
-        Assert.Contains(club.Name, timelineHtml);
+        Assert.Contains("Reading timeline", timelineHtml);
         Assert.Contains(book.Title, timelineHtml);
+    }
+
+    [Fact]
+    public async Task ClubHomeListsOtherUpcomingBooksBeforePastBooks()
+    {
+        var admin = await CreateUserAsync("Shelf Admin", isAdmin: true);
+        var club = await CreateClubAsync(admin, "shelf-club");
+        var otherClub = await CreateClubAsync(admin, "shelf-other");
+        await CreateBookAsync(club, "Past Shelf Book", daysFromToday: -30);
+        await CreateBookAsync(club, "Featured Shelf Book", daysFromToday: 1);
+        await CreateBookAsync(club, "Upcoming Shelf Book", daysFromToday: 14);
+        await CreateBookAsync(otherClub, "Current Shelf Book", daysFromToday: 3);
+        using var client = CreateClient();
+
+        var html = await client.GetStringAsync("/BookClubs");
+
+        Assert.Contains("Featured book", html);
+        Assert.Contains("Current and upcoming", html);
+        Assert.Contains("Past", html);
+        Assert.DoesNotContain("Club discussion", html);
+        var featuredIndex = html.IndexOf(
+            "Featured Shelf Book",
+            StringComparison.Ordinal);
+        var currentIndex = html.IndexOf(
+            "Current Shelf Book",
+            StringComparison.Ordinal);
+        var upcomingIndex = html.IndexOf(
+            "Upcoming Shelf Book",
+            StringComparison.Ordinal);
+        var pastIndex = html.IndexOf(
+            "Past Shelf Book",
+            StringComparison.Ordinal);
+        Assert.True(featuredIndex >= 0);
+        Assert.True(featuredIndex < currentIndex);
+        Assert.True(currentIndex < upcomingIndex);
+        Assert.True(upcomingIndex < pastIndex);
+        Assert.DoesNotContain("View Club", html);
+    }
+
+    [Fact]
+    public async Task ClubHomeFeaturesMostRecentBookWhenNoneAreScheduled()
+    {
+        var admin = await CreateUserAsync("Past Feature Admin", isAdmin: true);
+        var club = await CreateClubAsync(admin, "past-feature");
+        await CreateBookAsync(club, "Older Finished Book", daysFromToday: -40);
+        await CreateBookAsync(club, "Latest Finished Book", daysFromToday: -3);
+        using var client = CreateClient();
+
+        var html = await client.GetStringAsync("/BookClubs");
+        var latestIndex = html.IndexOf(
+            "Latest Finished Book",
+            StringComparison.Ordinal);
+        var olderIndex = html.IndexOf(
+            "Older Finished Book",
+            StringComparison.Ordinal);
+
+        Assert.Single(Regex.Matches(html, "Latest Finished Book"));
+        Assert.True(latestIndex >= 0);
+        Assert.True(latestIndex < olderIndex);
     }
 
     [Fact]
@@ -77,21 +134,12 @@ public sealed class BookClubTests
         var club = await CreateClubAsync(admin, "member-list");
         await AddMembershipAsync(club, beta);
         await AddMembershipAsync(club, alpha);
+        var book = await CreateBookAsync(club, "Member List Book", daysFromToday: 0);
         using var client = CreateClient();
 
-        var html = await client.GetStringAsync($"/BookClubs/{club.Slug}");
+        var html = await client.GetStringAsync($"/BookClubs/{club.Slug}/books/{book.Id}");
 
-        Assert.Contains("<details class=\"club-member-disclosure", html);
-        Assert.Matches(
-            "<summary class=\"club-member-summary\">\\s*3\\s+members\\s*</summary>",
-            html);
-        Assert.Contains("aria-labelledby=\"club-members-heading\"", html);
-        var alphaIndex = html.IndexOf(alpha.DisplayName, StringComparison.Ordinal);
-        var betaIndex = html.IndexOf(beta.DisplayName, StringComparison.Ordinal);
-        var hostIndex = html.IndexOf(admin.DisplayName, StringComparison.Ordinal);
-        Assert.True(alphaIndex >= 0);
-        Assert.True(alphaIndex < betaIndex);
-        Assert.True(betaIndex < hostIndex);
+        Assert.DoesNotContain("club-member-disclosure", html);
         Assert.DoesNotContain(alpha.Email!, html);
         Assert.DoesNotContain(beta.Email!, html);
         Assert.DoesNotContain(admin.Email!, html);
@@ -106,16 +154,15 @@ public sealed class BookClubTests
             emailConfirmed: false);
         var verified = await CreateUserAsync("Verified Joiner");
         var club = await CreateClubAsync(admin, "join-prompt");
+        var book = await CreateBookAsync(club, "Join Prompt Book", daysFromToday: 1);
         using var anonymousClient = CreateClient();
         using var unverifiedClient = await LoginAsync(unverified.Email!);
         using var verifiedClient = await LoginAsync(verified.Email!);
+        var bookPath = $"/BookClubs/{club.Slug}/books/{book.Id}";
 
-        var anonymousHtml = await anonymousClient.GetStringAsync(
-            $"/BookClubs/{club.Slug}");
-        var unverifiedHtml = await unverifiedClient.GetStringAsync(
-            $"/BookClubs/{club.Slug}");
-        var verifiedHtml = await verifiedClient.GetStringAsync(
-            $"/BookClubs/{club.Slug}");
+        var anonymousHtml = await anonymousClient.GetStringAsync(bookPath);
+        var unverifiedHtml = await unverifiedClient.GetStringAsync(bookPath);
+        var verifiedHtml = await verifiedClient.GetStringAsync(bookPath);
 
         Assert.Contains("Log in to join", anonymousHtml);
         Assert.Contains(
@@ -347,9 +394,7 @@ public sealed class BookClubTests
                 ("Description", "A club created in tests.")));
 
         Assert.Equal(HttpStatusCode.Redirect, create.StatusCode);
-        Assert.Equal(
-            $"/BookClubs/{slug}",
-            LocationPath(create));
+        Assert.Equal("/BookClubs/Index", LocationPath(create));
 
         var bookToken = await GetAntiforgeryTokenAsync(
             client,
@@ -659,27 +704,6 @@ public sealed class BookClubTests
             Form(token));
         Assert.Equal(HttpStatusCode.Redirect, pin.StatusCode);
 
-        var newestPage = await client.GetStringAsync(
-            $"/BookClubs/{club.Slug}?sort=newest");
-        Assert.Contains("Pinned post.", newestPage);
-        Assert.Contains("Newest post.", newestPage);
-        Assert.Contains("Oldest post.", newestPage);
-        Assert.True(
-            newestPage.IndexOf("Pinned post.", StringComparison.Ordinal) <
-            newestPage.IndexOf("Newest post.", StringComparison.Ordinal));
-        Assert.True(
-            newestPage.IndexOf("Newest post.", StringComparison.Ordinal) <
-            newestPage.IndexOf("Oldest post.", StringComparison.Ordinal));
-
-        var oldestPage = await client.GetStringAsync(
-            $"/BookClubs/{club.Slug}?sort=oldest");
-        Assert.True(
-            oldestPage.IndexOf("Pinned post.", StringComparison.Ordinal) <
-            oldestPage.IndexOf("Oldest post.", StringComparison.Ordinal));
-        Assert.True(
-            oldestPage.IndexOf("Oldest post.", StringComparison.Ordinal) <
-            oldestPage.IndexOf("Newest post.", StringComparison.Ordinal));
-
         await WithServicesAsync(async services =>
         {
             Assert.True((await services
@@ -752,12 +776,6 @@ public sealed class BookClubTests
             $"/BookClubs/{club.Slug}/polls/{clubPollId}/Vote",
             Form(voteToken, ("optionId", chapterTwoId.ToString())));
         Assert.Equal(HttpStatusCode.Redirect, vote.StatusCode);
-
-        var clubPage = await memberClient.GetStringAsync(
-            $"/BookClubs/{club.Slug}");
-        Assert.Contains("Which chapter next?", clubPage);
-        Assert.Contains("Chapter two", clubPage);
-        Assert.Contains(member.DisplayName, clubPage);
 
         var bookPage = await memberClient.GetStringAsync(
             $"/BookClubs/{club.Slug}/books/{book.Id}");
@@ -1020,6 +1038,17 @@ public sealed class BookClubTests
         string path)
     {
         var response = await client.GetAsync(path);
+        if (response.StatusCode is HttpStatusCode.Redirect
+            or HttpStatusCode.MovedPermanently)
+        {
+            var location = response.Headers.Location;
+            Assert.NotNull(location);
+            var nextPath = location.IsAbsoluteUri
+                ? location.PathAndQuery
+                : location.OriginalString;
+            response = await client.GetAsync(nextPath);
+        }
+
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
         var match = Regex.Match(

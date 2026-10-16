@@ -156,7 +156,7 @@ public sealed class SitePagesTests
 
         var clubsHtml = await client.GetStringAsync("/BookClubs");
         Assert.Matches(
-            @"class=""nav-link is-active""[\s\S]*?aria-current=""page""[\s\S]*?>[\s\r\n]*Book Clubs",
+            @"class=""nav-link is-active""[\s\S]*?aria-current=""page""[\s\S]*?>[\s\r\n]*Book Club[\s\r\n]*<",
             clubsHtml);
     }
 

@@ -1,16 +1,19 @@
-@model BookClubIndexViewModel
+@model BookClubHomeViewModel
 
 @{
-    ViewData["Title"] = "Book Clubs";
+    ViewData["Title"] = "Book Club";
+    var showNoticeForm =
+        ViewData.ModelState["NewNotice.Body"]?.Errors.Count > 0;
+    var featured = Model.FeaturedBook;
 }
 
 <section class="content-section">
     <div class="container">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
             <div>
-                <h1 class="mb-1">Book Clubs</h1>
+                <h1 class="mb-1">Book Club</h1>
                 <p class="text-muted mb-0">
-                    Join a club, follow the reading timeline, and take part in the discussion.
+                    The current read, the books coming up, and the ones already finished.
                 </p>
             </div>
 
@@ -19,101 +22,265 @@
                     asp-controller="BookClubs"
                     asp-action="Timeline"
                     class="btn btn-outline-primary">
-                    Combined Timeline
+                    Timeline
                 </a>
-                @if (Model.IsAdmin)
+                @if (Model.IsAdmin && !string.IsNullOrWhiteSpace(Model.PrimaryClubSlug))
                 {
                     <a
-                        asp-controller="BookClubs"
+                        asp-controller="ClubBooks"
                         asp-action="Create"
+                        asp-route-clubSlug="@Model.PrimaryClubSlug"
                         class="btn btn-primary">
-                        Create Club
+                        Add Book
                     </a>
                 }
             </div>
         </div>
 
+        @Html.AntiForgeryToken()
+
         @if (TempData["StatusMessage"] is string status)
         {
             <div class="alert alert-success">@status</div>
         }
-
-        @if (Model.Clubs.Count == 0)
+        @if (TempData["ErrorMessage"] is string error)
         {
-            <div class="alert alert-info mb-0">
-                No book clubs have been created yet.
-            </div>
+            <div class="alert alert-danger">@error</div>
         }
-        else
-        {
-            <div class="row g-4">
-                @foreach (var club in Model.Clubs)
-                {
-                    <div class="col-sm-12 col-md-6 col-lg-4">
-                        <article class="card travel-card">
-                            <div class="card-body d-flex flex-column">
-                                <h2 class="card-title h4">@club.Name</h2>
 
-                                @if (!string.IsNullOrWhiteSpace(club.Description))
-                                {
-                                    <p class="card-text">@club.Description</p>
-                                }
+        <div class="club-overview-grid mb-5">
+            <div class="club-overview-main">
+                <section class="club-panel" aria-labelledby="featured-book-heading">
+                    <h2 id="featured-book-heading" class="h4 mb-3">Featured Read</h2>
 
-                                @if (!string.IsNullOrWhiteSpace(club.CurrentBookTitle))
-                                {
-                                    <div class="book-club-current mb-3">
-                                        @if (!string.IsNullOrWhiteSpace(club.CurrentBookImagePath))
-                                        {
-                                            <img
-                                                src="@club.CurrentBookImagePath"
-                                                class="book-club-current-cover"
-                                                alt="Cover of @club.CurrentBookTitle" />
-                                        }
-                                        else
-                                        {
-                                            <div class="book-club-current-cover book-cover-placeholder">
-                                                No cover
-                                            </div>
-                                        }
-                                        <div>
-                                            <p class="text-uppercase small text-muted mb-1">
-                                                Current book
-                                            </p>
-                                            <p class="mb-1">
-                                                <strong>@club.CurrentBookTitle</strong>
-                                            </p>
-                                            <p class="small text-muted mb-0">
-                                                @club.CurrentBookStartDate?.ToString("MMM d, yyyy")
-                                                –
-                                                @club.CurrentBookEndDate?.ToString("MMM d, yyyy")
-                                            </p>
-                                        </div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <p class="small text-muted mb-3">
-                                        No upcoming book is scheduled.
-                                    </p>
-                                }
-
-                                <p class="small text-muted mb-3">
-                                    @club.MemberCount
-                                    @(club.MemberCount == 1 ? "member" : "members")
+                    @if (featured is null)
+                    {
+                        <p class="text-muted mb-0">
+                            No book is scheduled right now.
+                        </p>
+                    }
+                    else
+                    {
+                        <article class="current-book-card">
+                            @if (!string.IsNullOrWhiteSpace(featured.ImagePath))
+                            {
+                                <img
+                                    src="@featured.ImagePath"
+                                    class="current-book-cover"
+                                    alt="Cover of @featured.Title" />
+                            }
+                            else
+                            {
+                                <div class="current-book-cover book-cover-placeholder">
+                                    No cover yet
+                                </div>
+                            }
+                            <div class="current-book-details">
+                                <div class="mb-2">
+                                    <span class="badge timeline-status-badge @(featured.Status == ClubBookTimeline.Current ? "timeline-status-current" : featured.Status == ClubBookTimeline.Upcoming ? "timeline-status-upcoming" : "timeline-status-past")">
+                                        @featured.Status
+                                    </span>
+                                </div>
+                                <h3 class="h2 mb-1">
+                                    <a
+                                        asp-controller="ClubBooks"
+                                        asp-action="Details"
+                                        asp-route-clubSlug="@featured.ClubSlug"
+                                        asp-route-bookId="@featured.Id">
+                                        @featured.Title
+                                    </a>
+                                </h3>
+                                <p class="lead mb-2">@featured.AuthorName</p>
+                                <p class="fw-semibold mb-3">
+                                    @featured.StartDate.ToString("MMM d, yyyy")
+                                    –
+                                    @featured.EndDate.ToString("MMM d, yyyy")
                                 </p>
-
+                                @if (!string.IsNullOrWhiteSpace(featured.Notes))
+                                {
+                                    <p class="text-muted">@featured.Notes</p>
+                                }
                                 <a
-                                    asp-controller="BookClubs"
+                                    asp-controller="ClubBooks"
                                     asp-action="Details"
-                                    asp-route-slug="@club.Slug"
-                                    class="btn btn-outline-primary mt-auto">
-                                    View Club
+                                    asp-route-clubSlug="@featured.ClubSlug"
+                                    asp-route-bookId="@featured.Id"
+                                    class="btn btn-primary">
+                                    Book discussion
                                 </a>
                             </div>
                         </article>
+                    }
+                </section>
+            </div>
+
+            <aside class="club-panel club-notices-panel">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h4 mb-0">Notices</h2>
+                    @if (Model.IsAdmin && Model.NoticeClubs.Count > 0)
+                    {
+                        <button
+                            type="button"
+                            class="notice-add-toggle"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#notice-form"
+                            aria-expanded="@showNoticeForm.ToString().ToLowerInvariant()"
+                            aria-controls="notice-form"
+                            title="Post a notice"
+                            aria-label="Post a notice">
+                            +
+                        </button>
+                    }
+                </div>
+
+                @if (Model.IsAdmin && Model.NoticeClubs.Count > 0)
+                {
+                    <div class="collapse @(showNoticeForm ? "show" : null)" id="notice-form">
+                        <form
+                            asp-controller="BookClubs"
+                            asp-action="AddHomeNotice"
+                            method="post"
+                            class="compact-reply-form mb-3">
+                            <input
+                                type="hidden"
+                                name="clubSlug"
+                                value="@Model.PrimaryClubSlug" />
+                            <div class="mb-2">
+                                <label asp-for="NewNotice.Body" class="form-label"></label>
+                                <textarea
+                                    asp-for="NewNotice.Body"
+                                    class="form-control"
+                                    rows="3"
+                                    placeholder="Share a notice with the club.">
+                                </textarea>
+                                <span asp-validation-for="NewNotice.Body" class="text-danger"></span>
+                            </div>
+                            <button type="submit" class="btn btn-dark btn-sm">
+                                Post Notice
+                            </button>
+                        </form>
                     </div>
                 }
-            </div>
+
+                @if (Model.Notices.Count == 0)
+                {
+                    <p class="text-muted mb-0">No notices have been posted yet.</p>
+                }
+                else
+                {
+                    <ul class="list-unstyled club-notice-list mb-0">
+                        @foreach (var notice in Model.Notices)
+                        {
+                            <li class="club-notice">
+                                <p class="club-notice-body mb-1">@notice.Body</p>
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <p class="small text-muted mb-0">
+                                        @notice.AuthorDisplayName ·
+                                        @notice.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy")
+                                    </p>
+                                    @if (Model.IsAdmin)
+                                    {
+                                        <div class="d-flex align-items-center gap-1">
+                                            <button
+                                                type="button"
+                                                class="icon-action"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#edit-notice-@notice.Id"
+                                                aria-expanded="false"
+                                                aria-controls="edit-notice-@notice.Id"
+                                                title="Edit notice"
+                                                aria-label="Edit notice">
+                                                &#9998;
+                                            </button>
+                                            <form
+                                                asp-controller="BookClubs"
+                                                asp-action="DeleteNotice"
+                                                asp-route-slug="@notice.ClubSlug"
+                                                asp-route-noticeId="@notice.Id"
+                                                asp-route-home="true"
+                                                method="post">
+                                                <button
+                                                    type="submit"
+                                                    class="icon-action icon-action-danger"
+                                                    title="Delete notice"
+                                                    aria-label="Delete notice"
+                                                    onclick="return confirm('Delete this notice?');">
+                                                    &#128465;
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                </div>
+                                @if (Model.IsAdmin)
+                                {
+                                    <div class="collapse mt-2" id="edit-notice-@notice.Id">
+                                        <form
+                                            asp-controller="BookClubs"
+                                            asp-action="EditNotice"
+                                            asp-route-slug="@notice.ClubSlug"
+                                            asp-route-noticeId="@notice.Id"
+                                            asp-route-home="true"
+                                            method="post"
+                                            class="compact-reply-form">
+                                            <label
+                                                for="notice-body-@notice.Id"
+                                                class="visually-hidden">
+                                                Notice
+                                            </label>
+                                            <textarea
+                                                id="notice-body-@notice.Id"
+                                                name="Body"
+                                                class="form-control mb-2"
+                                                rows="3"
+                                                maxlength="2000"
+                                                required>@notice.Body</textarea>
+                                            <button type="submit" class="btn btn-dark btn-sm">
+                                                Save Notice
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </aside>
+        </div>
+
+        @{
+            var currentCount = Model.UpcomingBooks.Count(book =>
+                book.Status == ClubBookTimeline.Current);
+            var upcomingCount = Model.UpcomingBooks.Count(book =>
+                book.Status == ClubBookTimeline.Upcoming);
+            var showCurrentAndUpcoming = upcomingCount > 0 || currentCount > 1;
         }
+        @if (showCurrentAndUpcoming)
+        {
+            <partial
+                name="_BookShelf"
+                model="@(new BookShelfSectionViewModel
+                {
+                    Heading = "Current and upcoming",
+                    EmptyMessage = "No current or upcoming books.",
+                    ShowClubName = false,
+                    IsAdmin = Model.IsAdmin,
+                    Books = Model.UpcomingBooks
+                })" />
+        }
+
+        <partial
+            name="_BookShelf"
+            model="@(new BookShelfSectionViewModel
+            {
+                Heading = "Previous Reads",
+                EmptyMessage = "No past books yet.",
+                ShowClubName = false,
+                IsAdmin = Model.IsAdmin,
+                Books = Model.PastBooks
+            })" />
     </div>
 </section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

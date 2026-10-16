@@ -31,42 +31,11 @@ public class BookClubsController : Controller
 
     [HttpGet]
     [HttpGet("Index")]
-    public async Task<IActionResult> Index()
-    {
-        var currentUser = await _userManager.GetUserAsync(User);
-        var canWrite = currentUser?.EmailConfirmed == true;
-        var clubs = await _context.BookClubs
-            .AsNoTracking()
-            .Include(club => club.Memberships)
-            .Include(club => club.Books)
-            .OrderBy(club => club.Name)
-            .ToListAsync();
+    public async Task<IActionResult> Index() =>
+        View(await BuildHomeViewModelAsync());
 
-        var now = DateTime.UtcNow;
-        var viewModel = new BookClubIndexViewModel
-        {
-            IsAdmin = canWrite && User.IsInRole(RoleNames.Admin),
-            Clubs = clubs.Select(club =>
-            {
-                var currentBook =
-                    ClubBookTimeline.CurrentBook(club.Books, now);
-                return new BookClubListItemViewModel
-                {
-                    Name = club.Name,
-                    Slug = club.Slug,
-                    Description = club.Description,
-                    MemberCount = club.Memberships.Count,
-                    CurrentBookId = currentBook?.Id,
-                    CurrentBookTitle = currentBook?.Title,
-                    CurrentBookImagePath = currentBook?.ImagePath,
-                    CurrentBookStartDate = currentBook?.StartDate,
-                    CurrentBookEndDate = currentBook?.EndDate
-                };
-            }).ToList()
-        };
-
-        return View(viewModel);
-    }
+    [HttpGet("Clubs")]
+    public IActionResult Clubs() => RedirectToAction(nameof(Index));
 
     [HttpGet("Timeline")]
     public async Task<IActionResult> Timeline()
@@ -74,17 +43,10 @@ public class BookClubsController : Controller
         var books = await _context.ClubBooks
             .AsNoTracking()
             .Include(book => book.Club)
-            .OrderBy(book => book.EndDate)
-            .ThenBy(book => book.Club.Name)
+            .OrderByDescending(book => book.EndDate)
             .ThenBy(book => book.Title)
             .ToListAsync();
-
         var now = DateTime.UtcNow;
-        var currentBooks = books
-            .GroupBy(book => book.ClubId)
-            .ToDictionary(
-                group => group.Key,
-                group => ClubBookTimeline.CurrentBook(group, now));
 
         return View(new CombinedBookTimelineViewModel
         {
@@ -99,10 +61,7 @@ public class BookClubsController : Controller
                 ImagePath = book.ImagePath,
                 StartDate = book.StartDate,
                 EndDate = book.EndDate,
-                Status = ClubBookTimeline.Status(
-                    book,
-                    currentBooks[book.ClubId],
-                    now)
+                Status = ClubBookTimeline.Status(book, now)
             }).ToList()
         });
     }
@@ -160,27 +119,13 @@ public class BookClubsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["StatusMessage"] = $"{club.Name} is ready.";
-        return RedirectToAction(nameof(Details), new { slug = club.Slug });
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpGet("{slug}/Edit")]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<IActionResult> Edit(string slug)
-    {
-        var club = await FindClubBySlugAsync(slug);
-        if (club is null)
-        {
-            return NotFound();
-        }
-
-        ViewData["ClubSlug"] = club.Slug;
-        return View(new BookClubFormViewModel
-        {
-            Name = club.Name,
-            Slug = club.Slug,
-            Description = club.Description
-        });
-    }
+    public IActionResult Edit(string slug) =>
+        RedirectToAction(nameof(Index));
 
     [HttpPost("{slug}/Edit")]
     [Authorize(Roles = RoleNames.Admin)]
@@ -218,16 +163,13 @@ public class BookClubsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["StatusMessage"] = "Club details were updated.";
-        return RedirectToAction(nameof(Details), new { slug = club.Slug });
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpGet("{slug}/Delete")]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<IActionResult> Delete(string slug)
-    {
-        var club = await FindClubBySlugAsync(slug);
-        return club is null ? NotFound() : View(club);
-    }
+    public IActionResult Delete(string slug) =>
+        RedirectToAction(nameof(Index));
 
     [HttpPost("{slug}/Delete")]
     [Authorize(Roles = RoleNames.Admin)]
@@ -261,25 +203,13 @@ public class BookClubsController : Controller
     }
 
     [HttpGet("{slug}")]
-    public async Task<IActionResult> Details(
-        string slug,
-        string? view = null,
-        string? sort = null)
-    {
-        var viewModel = await BuildDetailsViewModelAsync(
-            slug,
-            showTimeline: string.Equals(
-                view,
-                "timeline",
-                StringComparison.OrdinalIgnoreCase),
-            discussionSort: sort);
-        return viewModel is null ? NotFound() : View(viewModel);
-    }
+    public IActionResult Details(string slug) =>
+        RedirectToAction(nameof(Index));
 
     [HttpPost("{slug}/Join")]
     [Authorize]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Join(string slug)
+    public async Task<IActionResult> Join(string slug, string? returnUrl)
     {
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrWhiteSpace(userId))
@@ -306,7 +236,12 @@ public class BookClubsController : Controller
             TempData["StatusMessage"] = $"You joined {club.Name}.";
         }
 
-        return RedirectToAction(nameof(Details), new { slug });
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost("{slug}/Leave")]
@@ -337,15 +272,24 @@ public class BookClubsController : Controller
             TempData["StatusMessage"] = $"You left {club.Name}.";
         }
 
-        return RedirectToAction(nameof(Details), new { slug });
+        return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost("Notices")]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> AddHomeNotice(
+        string clubSlug,
+        [Bind(Prefix = "NewNotice")] AddClubNoticeViewModel model) =>
+        AddNotice(clubSlug, model, home: true);
 
     [HttpPost("{slug}/Notices")]
     [Authorize(Roles = RoleNames.Admin)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddNotice(
         string slug,
-        [Bind(Prefix = "NewNotice")] AddClubNoticeViewModel model)
+        [Bind(Prefix = "NewNotice")] AddClubNoticeViewModel model,
+        bool home = false)
     {
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrWhiteSpace(userId))
@@ -362,6 +306,13 @@ public class BookClubsController : Controller
 
         if (!ModelState.IsValid)
         {
+            if (home)
+            {
+                var homeView = await BuildHomeViewModelAsync();
+                homeView.NewNotice = model;
+                return View(nameof(Index), homeView);
+            }
+
             var invalidView = await BuildDetailsViewModelAsync(slug);
             if (invalidView is null)
             {
@@ -382,7 +333,7 @@ public class BookClubsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["StatusMessage"] = "Notice posted.";
-        return RedirectToAction(nameof(Details), new { slug });
+        return NoticeRedirect(home, slug);
     }
 
     [HttpPost("{slug}/Notices/{noticeId:int}/Edit")]
@@ -391,7 +342,8 @@ public class BookClubsController : Controller
     public async Task<IActionResult> EditNotice(
         string slug,
         int noticeId,
-        AddClubNoticeViewModel model)
+        AddClubNoticeViewModel model,
+        bool home = false)
     {
         var notice = await _context.ClubNotices
             .Include(existing => existing.Club)
@@ -411,14 +363,14 @@ public class BookClubsController : Controller
                     .Select(error => error.ErrorMessage)
                     .FirstOrDefault()
                 ?? "Enter a valid notice.";
-            return RedirectToAction(nameof(Details), new { slug });
+            return NoticeRedirect(home, slug);
         }
 
         notice.Body = model.Body.Trim();
         await _context.SaveChangesAsync();
 
         TempData["StatusMessage"] = "Notice updated.";
-        return RedirectToAction(nameof(Details), new { slug });
+        return NoticeRedirect(home, slug);
     }
 
     [HttpPost("{slug}/Notices/{noticeId:int}/Delete")]
@@ -426,7 +378,8 @@ public class BookClubsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteNotice(
         string slug,
-        int noticeId)
+        int noticeId,
+        bool home = false)
     {
         var notice = await _context.ClubNotices
             .Include(existing => existing.Club)
@@ -442,8 +395,13 @@ public class BookClubsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["StatusMessage"] = "Notice deleted.";
-        return RedirectToAction(nameof(Details), new { slug });
+        return NoticeRedirect(home, slug);
     }
+
+    private IActionResult NoticeRedirect(bool home, string slug) =>
+        home
+            ? RedirectToAction(nameof(Index))
+            : RedirectToAction(nameof(Details), new { slug });
 
     [HttpPost("{slug}/Discussions")]
     [Authorize]
@@ -500,6 +458,105 @@ public class BookClubsController : Controller
             nameof(Details),
             new { slug, sort = DiscussionSortOrder.Normalize(sort) });
     }
+
+    private async Task<BookClubHomeViewModel> BuildHomeViewModelAsync()
+    {
+        var currentUser = await _userManager.GetUserAsync(User);
+        var canWrite = currentUser?.EmailConfirmed == true;
+        var now = DateTime.UtcNow;
+        var clubs = await _context.BookClubs
+            .AsNoTracking()
+            .Include(club => club.Books)
+            .OrderBy(club => club.Name)
+            .ToListAsync();
+        var notices = await _context.ClubNotices
+            .AsNoTracking()
+            .Include(notice => notice.Author)
+            .Include(notice => notice.Club)
+            .OrderByDescending(notice => notice.CreatedAt)
+            .ToListAsync();
+
+        var books = clubs
+            .SelectMany(club => club.Books.Select(book => ToTimelineItem(
+                book,
+                club,
+                now)))
+            .ToList();
+        var featured = books
+            .Where(book => book.Status == ClubBookTimeline.Current)
+            .OrderBy(book => book.EndDate)
+            .ThenBy(book => book.Id)
+            .FirstOrDefault()
+            ?? books
+                .Where(book => book.Status == ClubBookTimeline.Upcoming)
+                .OrderBy(book => book.EndDate)
+                .ThenBy(book => book.Id)
+                .FirstOrDefault()
+            ?? books
+                .OrderByDescending(book => book.EndDate)
+                .ThenByDescending(book => book.Id)
+                .FirstOrDefault();
+        var primaryClubSlug = featured?.ClubSlug
+            ?? (clubs.Count == 1 ? clubs[0].Slug : null);
+
+        return new BookClubHomeViewModel
+        {
+            IsAdmin = canWrite && User.IsInRole(RoleNames.Admin),
+            ShowClubNames = false,
+            PrimaryClubSlug = primaryClubSlug,
+            FeaturedBook = featured,
+            UpcomingBooks = books
+                .Where(book =>
+                    book.Status == ClubBookTimeline.Current ||
+                    book.Status == ClubBookTimeline.Upcoming)
+                .OrderBy(book => book.Status == ClubBookTimeline.Current ? 0 : 1)
+                .ThenBy(book => book.StartDate)
+                .ThenBy(book => book.EndDate)
+                .ThenBy(book => book.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            PastBooks = books
+                .Where(book => book.EndDate.Date < now.Date)
+                .OrderByDescending(book => book.EndDate)
+                .ThenBy(book => book.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            Notices = notices
+                .Select(notice => new ClubNoticeItemViewModel
+                {
+                    Id = notice.Id,
+                    ClubName = notice.Club.Name,
+                    ClubSlug = notice.Club.Slug,
+                    AuthorDisplayName = notice.Author.DisplayName,
+                    Body = notice.Body,
+                    CreatedAt = notice.CreatedAt
+                })
+                .ToList(),
+            NoticeClubs = clubs
+                .Select(club => new BookClubNoticeTargetViewModel
+                {
+                    Name = club.Name,
+                    Slug = club.Slug
+                })
+                .ToList()
+        };
+    }
+
+    private static CombinedBookTimelineItemViewModel ToTimelineItem(
+        ClubBook book,
+        BookClub club,
+        DateTime utcNow) =>
+        new()
+        {
+            Id = book.Id,
+            ClubName = club.Name,
+            ClubSlug = club.Slug,
+            Title = book.Title,
+            AuthorName = book.AuthorName,
+            Notes = book.Notes,
+            ImagePath = book.ImagePath,
+            StartDate = book.StartDate,
+            EndDate = book.EndDate,
+            Status = ClubBookTimeline.Status(book, utcNow)
+        };
 
     private async Task<BookClub?> FindClubBySlugAsync(string slug) =>
         await _context.BookClubs
@@ -576,7 +633,7 @@ public class BookClubsController : Controller
                 ImagePath = book.ImagePath,
                 StartDate = book.StartDate,
                 EndDate = book.EndDate,
-                Status = ClubBookTimeline.Status(book, currentBook, now)
+                Status = ClubBookTimeline.Status(book, now)
             })
             .ToList();
 

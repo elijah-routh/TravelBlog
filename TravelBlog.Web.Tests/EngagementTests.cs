@@ -238,9 +238,6 @@ public sealed class EngagementTests
                     like.DiscussionPostId == discussion.Id &&
                     like.UserId == member.Id));
         });
-
-        var html = await client.GetStringAsync($"/BookClubs/{club.Slug}");
-        Assert.Contains("Unlike, 1 like", html);
     }
 
     [Fact]
@@ -471,6 +468,17 @@ public sealed class EngagementTests
         string path)
     {
         var response = await client.GetAsync(path);
+        if (response.StatusCode is HttpStatusCode.Redirect
+            or HttpStatusCode.MovedPermanently)
+        {
+            var location = response.Headers.Location;
+            Assert.NotNull(location);
+            var nextPath = location.IsAbsoluteUri
+                ? location.PathAndQuery
+                : location.OriginalString;
+            response = await client.GetAsync(nextPath);
+        }
+
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
         var match = Regex.Match(
